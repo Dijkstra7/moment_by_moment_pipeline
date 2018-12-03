@@ -5,6 +5,9 @@ Loader
 
 Loads the data.
 """
+import os
+import pickle
+
 import pandas as pd
 from datetime import datetime
 
@@ -16,14 +19,24 @@ class DataLoader:
                                    "samengevoegd_editforfirstattempts.xlsx"
         self.sheetname = s_name or "AllData"
         self.data = None
+        self.quick_loaded = False
 
-    def load(self, from_csv=False):
+    def load(self, from_csv=False, quick_loading=True):
+        if quick_loading is True:
+            print("Quick loading")
+            if os.path.exists("quicksave.pkl"):
+                self.data = pickle.load(open("quicksave.pkl", "rb"))
+                self.quick_loaded = True
+                print("Quickload succesfull")
+                return self.data.copy()
+            else:
+                print("Quickloading failed, go for long version")
         if from_csv is True:
             data = pd.read_csv(self.file_name, infer_datetime_format=True)
         else:
             data = pd.read_excel(self.file_name, sheet_name=self.sheetname)
         data.rename(columns={"LearningObjectiveId": "LOID"}, inplace=True)
-        self.data = data
+        self.data = data.copy()
         return data
 
     # def read_date(self, lst):
@@ -39,6 +52,9 @@ class DataLoader:
     #                               microsecond)
     #             print("into:", lst[n])
     #     print(lst[0].dtype.type)
+
+    def quick_save(self, data):
+        pickle.dump(data, open("quicksave.pkl", "wb"))
 
     def sort_data_by(self, df=None, column="Index"):
         if df is None:

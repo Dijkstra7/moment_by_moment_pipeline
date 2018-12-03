@@ -1,0 +1,19 @@
+Verschil in aantal goed voor en nameting:
+user,	moment,		gegeven,	pipeline,	verschil
+2009,	voormeting,	7,			6,			-1
+2011,	voormeting,	3,			0,			-3
+2031,	voormeting,	10,			8,			-2
+2031,	nameting,	13,			24,			+11
+2033,	voormeting,	23,			18,			-5
+2041,	voormeting,	9,			8,			-1
+2041,	nameting,	7,			24,			+17
+2051,	voormeting,	22,			12,			-10
+2053,	voormeting,	9,			8,			-1
+2065,	nameting,	22,			19,			-3
+2080,	nameting,	22,			21,			-1
+2087,	nameting,	22,			21,			-1
+2095,	nameting,	23,			22,			-1
+2101,	nameting,	13,			11,			-2
+2102,	nameting,	22,			21,			-1
+2103,	nameting,	20,			16,			-4
+2105,	voormeting,	17,			15,			-2
