@@ -43,7 +43,7 @@ def load(ql):
         data = data[['DateTime', 'UserId', 'ExerciseId',
                      'LOID', 'Correct', 'AbilityAfterAnswer']]
         print("Preprocessing data")
-        data = loader.sort_data_by(data, "DateTime")
+        loader.sort_data_by(data, "DateTime")
         data = loader.filter(filters)
         data = PhaseFinder().find_phases(data)
         data = correct(data)
