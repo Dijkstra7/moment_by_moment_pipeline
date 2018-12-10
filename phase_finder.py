@@ -16,15 +16,22 @@ class PhaseFinder:
     def __init__(self):
         self.pre_max_id = len(pre_ids)
         self.ap_day = {}
+        self.gui_day = {}
         self.post_min_id = 0
 
     def process_gui(self, row):
+        if "rap" in self.ap_day:
+            return False
         if row.ExerciseId in gui_ids:
             if row.LOID not in self.ap_day:
+                if row.LOID not in self.gui_day:
+                    self.gui_day[row.LOID] = row.DateTime.day
                 return True
         return False
 
     def process_nap(self, row):
+        if "rap" in self.ap_day:
+            return False
         if row.ExerciseId in nap_ids:
             if row.LOID not in self.ap_day:
                 return True
@@ -52,10 +59,16 @@ class PhaseFinder:
         return False
 
     def process_ap(self, row):
+        if "rap" in self.ap_day:
+            return False
+        if row.UserId == 2036:
+            print(row.values, self.ap_day, self.gui_day, row.DateTime.day)
         if row.LOID not in self.ap_day:
             if ("pre" not in self.ap_day or
                     self.ap_day["pre"] == row.DateTime.day) and \
                     row.ExerciseId in all_ids:
+                return True  # Skip saving the first adaptive day
+            if row.LOID not in self.gui_day:
                 return True  # Skip saving the first adaptive day
             self.ap_day[row.LOID] = row.DateTime.day
             return True
@@ -72,6 +85,7 @@ class PhaseFinder:
             self.post_min_id = len(user_data)-len(post_ids)-1
             self.poss_post = user_data.loc[user_data.ExerciseId.isin(post_ids)]
             self.ap_day = {"post": self.poss_post.tail(1).iloc[0].DateTime.day}
+            self.gui_day = {}
             for id_, row in user_data.iterrows():
                 if self.process_gui(row):
                     data.loc[row['index'], 'phase'] = "gui"
@@ -89,63 +103,35 @@ class PhaseFinder:
                     data.loc[row['index'], 'phase'] = "ap"
 
                 else:
+                    if "rap" not in self.ap_day:
+                        self.ap_day["rap"] = row.DateTime.day
                     data.loc[row['index'], 'phase'] = "rap"
 
                 # print(data.head())
 
-            if verbose == 0:
-                continue
-
-            processed_data = data.copy().loc[data.UserId == user] \
-                .reset_index(drop=True)
-            pre_data = processed_data.loc[processed_data.phase == 'pre']
-            post_data = processed_data.loc[processed_data.phase == 'post']
-            if verbose == 1:
-                print(len(pre_data), len(post_data))
-                continue
-            if len(pre_data) < len(pre_ids):
-                missing_pre = pre_ids[:]
-                for id_ in pre_data.ExerciseId.values[:self.pre_max_id]:
-                    if id_ in missing_pre:
-                        missing_pre.remove(id_)
-                    else:
-                        print(id_)
-                print(f"Too short{user}: {len(pre_data)} - [{missing_pre}]")
-
-                print(self.ap_day)
-            else:
-                pass
-                # print(processed_data.loc[
-                #           (processed_data.ExerciseId.isin(pre_ids)) &
-                #           (processed_data.index > 24)
-                #       ].values)
-            for bluh in processed_data.values:
-                print(bluh)
-
-            # Print every data until last 'pre' and after first 'post' phase
-            max_pre = 0
-            min_post = len(processed_data)
-            if len(processed_data.loc[processed_data.phase == 'pre']) > 0:
-                max_pre = max(pre_data.index.values)
-                print(processed_data.iloc[:max_pre].values)
-            print('---------')
-            if len(processed_data.loc[processed_data.phase == 'post']) > 0:
-                min_post = min(post_data.index.values)
-                print(processed_data.iloc[min_post:].values)
-            print('===========')
-            if len(processed_data.iloc[:max_pre].loc[(processed_data.phase !=
-                                                      'pre')]) > 0:
-                print("pre:")
-                print(processed_data.iloc[:max_pre].loc[
-                          processed_data.phase != 'pre'].values)
-            if len(processed_data.iloc[min_post:].loc[processed_data.phase
-                                                      != 'post']) > 0:
-                print("post:")
-                print(processed_data.iloc[min_post:].loc[
-                          processed_data.phase != 'post'].values)
-                print(len(pre_data), len(post_data))
         print(data.loc[data.UserId == 2009].head())
         return data
+
+    @staticmethod
+    def correct_phases(df: pd.DataFrame, user_loid_to_dict: dict):
+        """
+        change for certain users the non-post and -pre phases of certain
+        learning objectives into another phase
+        Parameters
+        ----------
+        df: pd.DataFrame
+        user_loid_to_dict: dict of dicts
+
+        Returns
+        -------
+
+        """
+        for user, loids_to in user_loid_to_dict.items():
+            for loid, to in loids_to.items():
+                df.loc[(df.UserId == user) &
+                       (df.LOID == loid) &
+                       (~df.phase.isin(["post", "pre"])), "phase"] = to
+        return df
 
     @staticmethod
     def inspect_phases(df: pd.DataFrame):
@@ -157,17 +143,17 @@ class PhaseFinder:
             nap_data = u_data.loc[u_data.phase == "nap"]
             ap_data = u_data.loc[u_data.phase == "ap"]
             rap_data = u_data.loc[u_data.phase == "rap"]
-            
+
             post_data = u_data.loc[u_data.phase == "post"]
             all_post = u_data.loc[(u_data.phase != 'pre') &
                                   (u_data.ExerciseId.isin(post_ids))]
             all_gui = u_data.loc[(u_data.ExerciseId.isin(gui_ids))]
             all_nap = u_data.loc[(u_data.ExerciseId.isin(nap_ids))]
-            all_ap = u_data.loc[(u_data.phase != "rap") & 
+            all_ap = u_data.loc[(u_data.phase != "rap") &
                                 (~u_data.ExerciseId.isin(all_ids))]
-            all_rap = u_data.loc[(u_data.phase != "ap") & 
+            all_rap = u_data.loc[(u_data.phase != "ap") &
                                  (~u_data.ExerciseId.isin(all_ids))]
-            
+
             if len(post_data) != -1:
                 print('---------')
                 for id_, row in u_data.iterrows():
@@ -188,7 +174,7 @@ class PhaseFinder:
             nap_data = u_data.loc[u_data.phase == "nap"]
             ap_data = u_data.loc[u_data.phase == "ap"]
             rap_data = u_data.loc[u_data.phase == "rap"]
-            
+
             post_data = u_data.loc[u_data.phase == "post"]
             all_post = u_data.loc[(u_data.phase != 'pre') &
                                   (u_data.ExerciseId.isin(post_ids))]
@@ -196,12 +182,12 @@ class PhaseFinder:
                                   (u_data.ExerciseId.isin(pre_ids))]
             all_gui = u_data.loc[(u_data.ExerciseId.isin(gui_ids))]
             all_nap = u_data.loc[(u_data.ExerciseId.isin(nap_ids))]
-            all_ap = u_data.loc[(u_data.phase != "rap") & 
+            all_ap = u_data.loc[(u_data.phase != "rap") &
                                 (~u_data.ExerciseId.isin(all_ids))]
-            all_rap = u_data.loc[(u_data.phase != "ap") & 
+            all_rap = u_data.loc[(u_data.phase != "ap") &
                                  (~u_data.ExerciseId.isin(all_ids))]
             if len(post_data) > -1:
-                print(user) 
+                print(user)
                 print("pre", len(pre_data), len(all_pre))
                 print("post", len(post_data), len(all_post))
                 print("gui", len(gui_data), len(all_gui))
@@ -212,4 +198,4 @@ class PhaseFinder:
 
 if __name__ == "__main__":
     import pipeline
-    pipeline.run_pipeline()
+    pipeline.run_pipeline(False)
