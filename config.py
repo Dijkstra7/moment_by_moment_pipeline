@@ -7,7 +7,9 @@ Several configurations on what data we want to extract.
 """
 import numpy as np
 
+loids = {8025: "S1", 7789: "S2", 7771: "S3"}
 filters = {"LOID": ["7579", 7579, np.nan]}
+transfer_filters = {"LOID": {8025, 7789, 7771, np.nan}}
 unknown_columns = ["School", "Leeftijd", "Geslacht", "Cito-score",
                    "Cito vaardigheidscore"]
 pre_ids = [1512433, 1928354, 2151770, 2151771, 966492, 1067176, 1041097,
@@ -28,3 +30,12 @@ nap_ids = [1684029, 1684031, 1684033, 1684032, 1684033, 1684034, 1684035,
            1686774, 1686775, 1686781, 1686776, 1707403, 1707390, 1707394,
            1703090, 1703096, 1703097, 1703099, 1703100, 1703072, 1703082,
            1703081, 1703083, 1703103, 1702897, 1703108, ]
+
+PARAMETER_L = [0.001, .027, 0.536]
+PARAMETER_T = [0.149, .059, 0.101]
+PARAMETER_G = [0.3, 0.250, 0.232]
+PARAMETER_S = [0.1, 0.1, 0.1]
+LEARNING_GOALS = [7771, 7789, 8025]
+IMMEDIATE_PEAK_BOUNDARY = 10
+MINIMUM_CHANGE = 0.015
+MAXIMIMUM_DISTANCE_CLOSE_PEAKS = 25

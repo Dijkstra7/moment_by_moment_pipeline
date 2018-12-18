@@ -9,25 +9,66 @@ long and short files.
 from loader import DataLoader
 from processor import Processor
 from saver import Saver
-from config import filters
+from config import filters, transfer_filters
 from phase_finder import PhaseFinder
 import numpy as np
 
 
 def run_pipeline(ql=True):
-    data, first_att_data = load(ql)
+    data, first_att_data, transfer_data = load(ql)
     # inspect(data)
+    print(transfer_data.LOID.head())
     print("Processing data")
     saver = Saver(data)
     processor = Processor(data, first_att_data, saver.short, saver.long)
-    for phase in ["pre", "post"]:
-        processor.count_total_correct_phase_exercises(phase)
-    processor.calculate_gain()
-    processor.count_total_exercises_made()
-    processor.count_total_exercises_correct()
-    processor.count_total_exercises_made_att()
-    processor.count_total_exercises_correct_att()
-
+    # for phase in ["pre", "post"]:
+    #     processor.count_total_correct_phase_exercises(phase)
+    # processor.calculate_gain()
+    # processor.get_transfer_score(transfer_data)
+    # processor.count_total_exercises_made()
+    # processor.count_total_exercises_correct()
+    # processor.count_total_exercises_made_att()
+    # processor.count_total_exercises_correct_att()
+    skills = data.LOID.unique()
+    # for phase in ["pre", "post"]:
+    #     for skill in skills:
+    #         processor.skill_count_total_correct_phase_exercise(skill, phase)
+    # for skill in skills:
+    #     processor.calculate_gain_per_skill(skill)
+    # for skill in skills:
+    #     processor.get_last_ability_of_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_exercises_made_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_exercises_correct_per_skill(skill)
+    # for skill in skills:
+    #     processor.calculate_percentage_correct_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_exercises_made_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_exercises_correct_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.calculate_percentage_correct_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_adaptive_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_correct_adaptive_per_skill(skill)
+    # for skill in skills:
+    #     processor.calculate_percentage_correct_adaptive_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_adaptive_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_correct_adaptive_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.calculate_percentage_correct_adaptive_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.add_skill_to_long_file(skill)
+    for skill in skills:
+        processor.process_curves(skill)
+    for skill in skills:
+        processor.calculate_type_curve(skill)
+    for skill in skills:
+        processor.get_phase_of_last_peak(skill)
 
     save(saver, processor)
 
@@ -35,7 +76,7 @@ def run_pipeline(ql=True):
 def load(ql):
     print("Loading data")
     loader = DataLoader()
-    data = loader.load(quick_loading=ql)
+    data, transfer_data = loader.load(quick_loading=ql)
     if loader.quick_loaded is False:
         print("Organizing data")
         data["DateTime"] = loader.combine_date_time(data["SubmitDate"],
@@ -43,14 +84,16 @@ def load(ql):
         data = data[['DateTime', 'UserId', 'ExerciseId',
                      'LOID', 'Correct', 'AbilityAfterAnswer']]
         print("Preprocessing data")
-        loader.sort_data_by(data, "DateTime")
-        data = loader.filter(filters)
+        unfiltered = loader.sort_data_by(data, "DateTime")
+        transfer_data = loader.filter(transfer_filters)
+        data = loader.filter(filters, df=unfiltered)
         data = PhaseFinder().find_phases(data)
         data = correct(data)
+        loader.quick_save(transfer_data, f_name="quicktransfer.pkl")
         loader.quick_save(data)
     first_att_data = loader.first_attempts_only(['UserId', 'ExerciseId',
                                                  'LOID'])
-    return data, first_att_data
+    return data, first_att_data, transfer_data
 
 
 def correct(data):

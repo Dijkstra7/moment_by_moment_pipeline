@@ -27,11 +27,11 @@ if __name__ == "__main__":
             if len(correct) > 1:
                 print(user, exr, correct)
             if len(correct)> 0:
-                correct = correct[0]
+                correct = int(correct[0])
                 # print(correct)
                 post_alpha.loc[user, exr] = correct
     alpha = pd.concat((pre_alpha, post_alpha), axis=1)
-    alpha.to_csv("output/alpha_check.csv", na_rep=999)
+    alpha.to_csv("output/alpha_check.csv", na_rep=" ")
     print(alpha.head())
 
 

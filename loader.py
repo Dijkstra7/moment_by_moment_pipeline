@@ -26,9 +26,13 @@ class DataLoader:
             print("Quick loading")
             if os.path.exists("quicksave.pkl"):
                 self.data = pickle.load(open("quicksave.pkl", "rb"))
-                self.quick_loaded = True
-                print("Quickload succesfull")
-                return self.data.copy()
+                if os.path.exists("quicktransfer.pkl"):
+                    transferdata = pickle.load(open("quicktransfer.pkl", "rb"))
+                    self.quick_loaded = True
+                    print("Quickload succesfull")
+                    return self.data.copy(), transferdata
+                else:
+                    print("Quickloading failed, go for long version")
             else:
                 print("Quickloading failed, go for long version")
         if from_csv is True:
@@ -37,7 +41,7 @@ class DataLoader:
             data = pd.read_excel(self.file_name, sheet_name=self.sheetname)
         data.rename(columns={"LearningObjectiveId": "LOID"}, inplace=True)
         self.data = data.copy()
-        return data
+        return data, transfer_data
 
     # def read_date(self, lst):
     #     for n, i in enumerate(lst):
@@ -53,8 +57,8 @@ class DataLoader:
     #             print("into:", lst[n])
     #     print(lst[0].dtype.type)
 
-    def quick_save(self, data):
-        pickle.dump(data, open("quicksave.pkl", "wb"))
+    def quick_save(self, data, f_name="quicksave.pkl"):
+        pickle.dump(data, open(f_name, "wb"))
 
     def sort_data_by(self, df=None, column="Index"):
         if df is None:

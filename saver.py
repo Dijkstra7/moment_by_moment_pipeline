@@ -62,9 +62,9 @@ class Saver:
         return long
 
     def save(self, f_name):
-        self.short.to_excel(f"{self.data_dir}\{f_name}_short.xlsx")
-        self.long.to_excel(f"{self.data_dir}\{f_name}_long.xlsx")
-        self.short.to_csv(f"{self.data_dir}\{f_name}_short.csv")
-        self.long.to_csv(f"{self.data_dir}\{f_name}_long.csv")
+        self.short.to_excel(f"{self.data_dir}\{f_name}_short.xlsx", na_rep=999)
+        self.long.to_excel(f"{self.data_dir}\{f_name}_long.xlsx", na_rep=999)
+        self.short.to_csv(f"{self.data_dir}\{f_name}_short.csv", na_rep=999)
+        self.long.to_csv(f"{self.data_dir}\{f_name}_long.csv", na_rep=999)
         
 
