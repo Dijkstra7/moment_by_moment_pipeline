@@ -1,0 +1,23 @@
+Voor "scrambled phases": Gebruiken we de eerste, de grootste of de complete curve waardes in de curve die dezelfde phase hebben? -> alleen gedeelte van de curve meenemen waar de lengte van dat gedeelte groter is dan 1 opdracht.
+
+Voor spikiness met een curve met een gemiddelde van 0: wat wordt de waarde? 0 of 999? -> 0/0 is geen waarde, dus 999
+---
+
+Peaks:
+Heeft immediate drop een peak in de pre-phase of heeft het geen peak? -> heeft geen peak dus dan laatste peak = 999
+
+
+---
+Focus op: 3112 -> pre-test: les 1 gemaakt. 1 van les 2 gemaakt. weer 7 van les 1 gemaakt. Daarna gestopt
+   `-> extra gemaakte pre-test opgaves (meer dan ~half uur (40 min) na start)
+      `-> Niet mee in score van pre test
+       -> Wel mee in aantal gemaakte pre-test opgaves?
+
+       -> Wel tellen als pre-test
+
+Valt onder aantal_goed_adaptive ook repeatedadative? -> ja, bij berekenen per
+phase gaan ze wel los van elkaar.
+
+Opdrachten gemaakt op dag van rap vallen onder rap, niet onder ap
+
+Opdrachten gemaakt na post-test vallen onder rap

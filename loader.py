@@ -15,22 +15,22 @@ from datetime import datetime
 class DataLoader:
 
     def __init__(self, f_name=None, s_name=None):
-        self.file_name = f_name or "./res/resultaten-radboud-all_anoniem " \
-                                   "samengevoegd_editforfirstattempts.xlsx"
+        self.file_name = f_name or "./res/leerpadenapp.xlsx"
         self.sheetname = s_name or "AllData"
         self.data = None
         self.quick_loaded = False
 
     def load(self, from_csv=False, quick_loading=True):
+        transfer_data = None
         if quick_loading is True:
             print("Quick loading")
             if os.path.exists("quicksave.pkl"):
                 self.data = pickle.load(open("quicksave.pkl", "rb"))
                 if os.path.exists("quicktransfer.pkl"):
-                    transferdata = pickle.load(open("quicktransfer.pkl", "rb"))
+                    transfer_data = pickle.load(open("quicktransfer.pkl", "rb"))
                     self.quick_loaded = True
                     print("Quickload succesfull")
-                    return self.data.copy(), transferdata
+                    return self.data.copy(), transfer_data
                 else:
                     print("Quickloading failed, go for long version")
             else:
@@ -127,4 +127,5 @@ class DataLoader:
         for key in filters:
             self.data = self.data.loc[~self.data[key].isin(
                 filters[key])].reset_index(drop=True)
+        self.data.loc[self.data.Correct > 1, "Correct"] = 1
         return self.data.copy()

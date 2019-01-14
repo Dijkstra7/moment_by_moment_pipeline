@@ -10,14 +10,13 @@ principle. This was done to quickly build the processing functions, while
 making sure that the steps followed are correct.
 A clean up may and should take place in the future.
 """
-from datetime import datetime
-
 import pandas as pd
 import numpy as np
 from config import loids
 from tqdm import tqdm
 import curve
 from plotter import Plotter
+
 
 class Processor:
 
@@ -31,6 +30,8 @@ class Processor:
         self.n_peaks = {}
         self.p_peaks = {}
         self.plotter = Plotter()
+        self.phase_dict = {"pre": 0, "gui": 1, "nap": 2, "ap": 3, "rap": 4,
+                           "post": 5}
 
     def count_total_correct_phase_exercises(self, phase):
         print(f"Tellen aantal goed {phase}-phase")
@@ -39,30 +40,32 @@ class Processor:
         self.short[cid] = np.nan
         self.long[cid] = np.nan
         data = self.data.copy()
+        if phase == "pre":
+            data = self.att.copy()
         for user in data['UserId'].unique():
             if len(data.loc[(data.phase == phase) &
                             (data.UserId == user)]) > 0:
                 select = data.loc[(data.phase == phase) &
                                   (data.UserId == user) &
                                   (data.Correct == 1)]
-                self.short[cid].loc[self.short.UserId == user] = len(select)
-                self.long[cid].loc[self.long.UserId == user] = len(select)
+                self.short.loc[self.short.UserId == user, cid] = len(select)
+                self.long.loc[self.long.UserId == user, cid] = len(select)
 
-    def count_total_phase_exercises(self, phase):
-        print(f"Tellen aantal goed {phase}-phase")
+    def count_total_phase_exercises(self, phase, skill):
+        print(f"Tellen aantal gemaakt {phase}-phase voor skill {skill}")
         translator = {"pre": "Voormeting", "post": "Nameting"}
-        cid = translator[phase]
-        self.short[cid] = np.nan
-        self.long[cid] = np.nan
+        scid = translator[phase]
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
         data = self.data.copy()
         for user in data['UserId'].unique():
             select_data = data.loc[(data.phase == phase) &
-                                   (data.UserId == user)]
-            self.short[cid].loc[self.short.UserId == user] = len(select_data)
-            self.long[cid].loc[self.long.UserId == user] = len(select_data)
-            if len(select_data) == 0:
-                self.short[cid].loc[self.short.UserId == user] = np.nan
-                self.long[cid].loc[self.long.UserId == user] = np.nan
+                                   (data.UserId == user) &
+                                   (data.LOID == skill)]
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = len(select_data)
+            self.long.loc[self.long.UserId == user, lcid] = len(select_data)
 
     def calculate_gain(self):
         print("Berekenen gain")
@@ -404,18 +407,20 @@ class Processor:
             if len(select) > 3:
                 self.curves[f"{user}_{skill}"] = curve.get_curve(select)
 
-                self.p_peaks[f"{user}_{skill}"], \
-                self.n_peaks[f"{user}_{skill}"] = \
+                self.n_peaks[f"{user}_{skill}"], \
+                self.p_peaks[f"{user}_{skill}"] = \
                     curve.get_peaks(self.curves[f"{user}_{skill}"])
             else:
-                self.curves[f"{user}_{skill}"], \
-                self.p_peaks[f"{user}_{skill}"],\
-                self.n_peaks[f"{user}_{skill}"] = \
-                    (999, 999, 999)
+                self.curves[f"{user}_{skill}"] = 999
+                self.n_peaks[f"{user}_{skill}"] = 999
+                self.p_peaks[f"{user}_{skill}"] = 999
 
             self.plotter.plot_save(
                 [self.curves[f"{user}_{skill}"], select.Correct.values*.05-1],
-                f_name=f"{user}_{skill}")
+                f_name=
+                    # f"{curve.get_type(curve.get_curve(select))}_"
+                    f"{user}_{skill}", phase_data=select.phase.values
+            )
 
     def calculate_type_curve(self, skill):
         desc = f"Calculating type of curve for skill {skill}"
@@ -436,20 +441,181 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def get_phase_of_last_peak(self, skill):
-        desc = f"Calculating type of curve for skill {skill}"
-        scid = "MBML_curve"
-        lcid = f"MBML_curve_{skill}"
+        desc = f"Getting phase of last peak for skill {skill}"
+        scid = "Phase_last_peak"
+        lcid = f"{scid}_{skill}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
         data = self.att.copy()
         for user in tqdm(data['UserId'].unique(), desc=desc):
+            userdata = data.loc[(data.UserId == user) &
+                                (data.LOID == skill)]
             skill_curve = self.curves[f"{user}_{skill}"]
             if skill_curve == 999:
                 value = 999
             else:
-                value = curve.get_type(skill_curve)
+                if self.n_peaks[f"{user}_{skill}"] == 0:
+                    value = -1   # Or 0. Depending on whether you find the
+                                 # drop the first peak.
+                else:
+                    last_peak = self.p_peaks[f"{user}_{skill}"][-1]
+                    phase = userdata.iloc[last_peak].phase
+                    value = self.phase_dict[phase]
 
             self.short.loc[(self.short.UserId == user) &
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value
 
+    def count_first_attempts_per_skill(self, phase, skill):
+        desc = f"counting amount of first attempts for skill {skill}, " \
+               f"phase {phase}"
+        scid = f"Total_first_attempts_{phase}_phase"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(data['UserId'].unique(), desc=desc):
+            userdata = data.loc[(data.UserId == user) &
+                                (data.LOID == skill) &
+                                (data.phase == phase)]
+            value = len(userdata)
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def calculate_general_spikiness(self, skill):
+        desc = f"Calculate general spikiness for skill {skill}"
+        scid = f"General_spikiness"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(data['UserId'].unique(), desc=desc):
+            curve = self.curves[f"{user}_{skill}"]
+            if curve == 999:
+                value = 999
+            else:
+                # spikiness = max waarde / avg waarde
+                value = max(curve) / (sum(curve) / len(curve))
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def calculate_phase_spikiness(self, skill, phases, method="biggest"):
+        desc = f"Calculate per phase spikiness for skill {skill}"
+        data = self.att.copy()
+        for phase in phases:
+            scid = f"spikiness_{phase}"
+            lcid = f"{scid}_{skill}"
+            self.short.loc[self.short.LOID == skill, scid] = np.nan
+            self.long[lcid] = np.nan
+        for user in tqdm(data['UserId'].unique(), desc=desc):
+            curve = self.curves[f"{user}_{skill}"]
+            user_phases = data.loc[(data.UserId == user) &
+                                   (data.LOID == skill)].phase.values
+            # print('---\n', user, '\n---')
+            for phase in phases:
+                scid = f"spikiness_{phase}"
+                lcid = f"{scid}_{skill}"
+                if curve == 999:
+                    value = 999
+                else:
+                    phase_curve, _ = self.select_slice_curve(curve,
+                                                             user_phases,
+                                                             phase, method)
+                    # print(f"{phase}: {phase_curve}", end="; ")
+                    if len(phase_curve) > 0 and sum(phase_curve) > 0:
+                        # spikiness = max waarde / avg waarde
+                        value = max(phase_curve) / (sum(phase_curve)
+                                                    /
+                                                    len(phase_curve))
+                    else:
+                        if len(phase_curve) > 0:
+                            value = 0  # Or 999 depending on later decision
+                        else:
+                            value = 999
+                # print(value)
+                self.short.loc[(self.short.UserId == user) &
+                               (self.short.LOID == skill), scid] = value
+                self.long.loc[self.long.UserId == user, lcid] = value
+
+    @staticmethod
+    def select_slice_curve(curve, user_phases, phase, method="biggest"):
+        # Find start and endpoint of slices
+        curve_ends = []
+        curve_starts = []
+        if user_phases[0] == phase:
+            curve_starts = [0]
+        for i in range(1, len(curve)-1):
+            if user_phases[i] == phase:
+                if user_phases[i-1] != phase:
+                    curve_starts.append(i)
+                if user_phases[i+1] != phase:
+                    curve_ends.append(i)
+        if len(curve_ends) < len(curve_starts):
+            curve_ends.append(len(curve)-1)
+        # create slices
+        slices = []
+        ids = []
+        complete_slice = []
+        complete_ids = []
+        for i, j in zip(curve_starts, curve_ends):
+            slices.append(curve[i: j+1])
+            ids.append(list(range(i, j+1)))
+            for n, k in enumerate(slices[-1]):
+                complete_slice.append(k)
+                complete_ids.append(n)
+
+        # Return slices
+        if len(slices) == 0:
+            return [], []
+        if method == "biggest":
+            # Return biggest slice
+            return max(slices, key=len), max(ids, key=len)
+        if method == "first":
+            return slices[0], ids[0]
+        if method == "all":
+            return complete_slice, complete_ids
+
+    def get_total_amount_of_peaks(self, skill):
+        desc = f"Count total amount of peaks in curve for skill {skill}"
+        scid = f"peaks_total"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(data['UserId'].unique(), desc=desc):
+            value = self.n_peaks[f"{user}_{skill}"]
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_peaks_per_skill_per_phase(self, skill, phase, method="biggest"):
+        desc = f"Count amount of peaks in curve for phase {phase} and " \
+               f"for skill {skill} "
+        scid = f"peaks_{phase}"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(data['UserId'].unique(), desc=desc):
+            curve = self.curves[f"{user}_{skill}"]
+            user_phases = data.loc[(data.UserId == user) &
+                                   (data.LOID == skill)].phase.values
+            peaks = self.p_peaks[f"{user}_{skill}"]
+            _, phase_ids = self.select_slice_curve(curve, user_phases,
+                                                   phase, method)
+            if curve == 999:
+                value = 999
+            else:
+                # Count peaks in the ids of the phases.
+                value = 0
+                for peak in peaks:
+                    if peak in phase_ids:
+                        value += 1
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+if __name__ == "__main__":
+    import pipeline
