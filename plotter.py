@@ -20,21 +20,21 @@ class Plotter:
         if isinstance(y_data[0], list) is False:
             y_data = [y_data]
         if x_data is None:
-            x_data = range(max([len(y) for y in y_data]))
+            x_data = range(1, max([len(y) for y in y_data]) + 1)
         for j, y in enumerate(y_data):
             plt.plot(x_data[:len(y)], y, color=["cyan", "red"][j])
         for j in range(len(phase_data)):
             phase = phase_data[j]
             if not phase in phases:
-                plt.broken_barh([(j-.5, 1)], (-0.5, 1),
+                plt.broken_barh([(j, 1)], (-0.5, 1),
                                 facecolors=self.color_dict[phase],
                                 label=phase)
                 phases.append(phase)
             else:
-                plt.broken_barh([(j - .5, 1)], (-0.5, 1),
+                plt.broken_barh([(j, 1)], (-0.5, 1),
                                 facecolors=self.color_dict[phase])
         plt.legend()
-        plt.gcf().savefig(f"{self.dir_}/{f_name}.png")
+        plt.gcf().savefig(f"{self.dir_}/{f_name}.png", dpi=300)
         plt.gcf().clear()
 
     def plot_show(self, y_data, x_data=None):

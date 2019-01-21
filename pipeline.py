@@ -20,9 +20,10 @@ def run_pipeline(ql=True):
     print(transfer_data.LOID.head())
     print("Processing data")
     saver = Saver(data)
-    processor = Processor(data, first_att_data, saver.short, saver.long)
-    skills = data.LOID.unique()
     phases = ["pre", "gui", "nap", "ap", "rap", "post"]
+    skills = data.LOID.unique()
+    processor = Processor(data, first_att_data, saver.short, saver.long,
+                          phases)
     for phase in ["pre", "post"]:
         processor.count_total_correct_phase_exercises(phase)
     processor.calculate_gain()
@@ -65,7 +66,8 @@ def run_pipeline(ql=True):
     for skill in skills:
         processor.add_skill_to_long_file(skill)
     for skill in skills:
-        processor.process_curves(skill)
+        processor.process_curves(skill, method="exclude_single_strays",
+                                 do_plot=True)
     for skill in skills:
         processor.calculate_type_curve(skill)
     for skill in skills:
@@ -89,9 +91,13 @@ def run_pipeline(ql=True):
     for phase in phases:
         for skill in skills:
             processor.get_peaks_per_skill_per_phase(skill, phase)
+    for skill in skills:
+        processor.get_total_amount_of_trans_peaks(skill)
+    for phase in phases:
+        for skill in skills:
+            processor.get_trans_peaks_per_skill_per_phase(skill, phase)
 
-
-    save(saver, processor)
+    save(saver, processor, f_name="leerpaden")
 
 
 def load(ql):
@@ -127,11 +133,11 @@ def correct(data):
     return data
 
 
-def save(saver, processor):
+def save(saver, processor, f_name="test"):
     print("saving data")
     saver.short = processor.short
     saver.long = processor.long
-    saver.save(f"test")
+    saver.save(f_name)
 
 
 def inspect(data):
