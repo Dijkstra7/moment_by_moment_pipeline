@@ -20,7 +20,7 @@ from plotter import Plotter
 
 class Processor:
 
-    def __init__(self, df, att, short, long, phases):
+    def __init__(self, df, att, short, long, phases, logs):
         self.phases = phases
         self.data = df
         self.att = att
@@ -35,6 +35,8 @@ class Processor:
                            "post": 5}
         self.phase_curves = {}
         self.phase_ids = {}
+        self.logs = logs
+        self.real_skill = {8025: 445, 7789: 478, 7771: 479}
 
     def count_total_correct_phase_exercises(self, phase):
         print(f"Tellen aantal goed {phase}-phase")
@@ -435,6 +437,45 @@ class Processor:
                     f"{user}_{skill}", phase_data=select.phase.values
                 )
 
+    def process_wrong_curves(self, skill, do_plot=False, method="biggest"):
+        desc = f"Processing curves for skill {skill}"
+        # print(self.data.columns)
+        data = self.data.copy()
+        data = data.loc[
+            (self.data.DateTime < pd.datetime(2018, 11, 15))]
+        for user in tqdm(data['UserId'].unique(), desc=desc):
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill)]
+            print(select.LOID.head())
+            print(select.LOID.tail())
+            if len(select) > 3:
+                user_curve = curve.get_curve(select)
+                key = f"{user}_{skill}"
+                self.curves[key] = user_curve
+                self.n_peaks[key], self.p_peaks[key] = \
+                    curve.get_peaks(user_curve)
+                user_phases = select.phase.values
+                for phase in self.phases:
+                    phase_key = f"{key}_{phase}"
+                    phase_curve, phase_ids = self.select_slice_curve(
+                        user_curve, user_phases, phase, method)
+                    self.phase_curves[phase_key] = phase_curve
+                    self.phase_ids[phase_key] = phase_ids
+            else:
+                self.curves[f"{user}_{skill}"] = 999
+                self.n_peaks[f"{user}_{skill}"] = 999
+                self.p_peaks[f"{user}_{skill}"] = 999
+                self.phase_curves[f"{user}_{skill}"] = 999
+                self.phase_ids[f"{user}_{skill}"] = 999
+            if do_plot is True:
+                self.plotter.plot_save(
+                    [self.curves[f"{user}_{skill}"],
+                     select.Correct.values * .05 - 1],
+                    f_name=
+                    # f"{curve.get_type(curve.get_curve(select))}_"
+                    f"{user}_{skill}_w", phase_data=select.phase.values
+                )
+
     @staticmethod
     def select_slice_curve(curve, user_phases, phase, method="biggest"):
         # Find start and endpoint of slices
@@ -497,7 +538,10 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.att.copy()
         for user in tqdm(data['UserId'].unique(), desc=desc):
-            skill_curve = self.curves[f"{user}_{skill}"]
+            try:
+                skill_curve = self.curves[f"{user}_{skill}"]
+            except KeyError:
+                skill_curve = 999
             if skill_curve == 999:
                 value = 999
             else:
@@ -687,6 +731,117 @@ class Processor:
             self.short.loc[(self.short.UserId == user) &
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_setgoal(self, skill, moment):
+        """
+        Get the goal set for the first lesson.
+
+        Parameters
+        ----------
+        skill
+
+        """
+        moment_dict = {1: "first", 2: "repeat", 3: "end"}
+        desc = f"get the goal set for the {moment_dict[moment]}" \
+               f" lessons of skill {skill} "
+        scid = f"set_goal_{moment_dict[moment]}"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = pd.read_csv("./res/objectiveinstances.csv", index_col=0)
+        for user in tqdm(self.att['UserId'].unique(), desc=desc):
+            set_logs = data.loc[
+                (data.user_id == user) &
+                (data.learning_objective_id == self.real_skill[skill]) &
+                (data.phase == moment_dict[moment])].goal.values
+            if len(set_logs) > 0 and set_logs[0] >= 0:
+                value = set_logs[-1]
+            else:
+                value = 999
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_shown_path_after_first_lesson(self, skill):
+        """
+        Get the goal set for the first lesson.
+
+        Parameters
+        ----------
+        skill
+
+        """
+        moment_dict = {1: "first", 2: "repeat", 3: "end"}
+        desc = f"get the shown after the first " \
+               f"lessons of skill {skill} "
+        scid = f"shown_path_first"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.logs.copy()
+        for user in tqdm(self.att['UserId'].unique(), desc=desc):
+            set_logs = data.loc[
+                (data.user_id == user) &
+                (data.screen == 3) &
+                (data.action == 2)]
+            clicked_skill = data.loc[
+                (data.user_id == user) &
+                (data.screen == 2) &
+                (data.action == 1)]
+            clicked_skill["skill"] = clicked_skill.object_id
+            set_logs = set_logs.append(clicked_skill).sort_index()
+            set_logs.skill = set_logs.skill.fillna(method='ffill')
+            set_logs = set_logs.loc[(set_logs.skill == self.real_skill[skill])
+                                    & (set_logs.screen == 3)
+                                    & (set_logs.object_id == 1)]
+            if len(set_logs) > 0:
+                value = set_logs['info'].values[0]
+            else:
+                value = 999
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_shown_path_after_repeat_lesson(self, skill):
+        """
+        Get the goal set for the first lesson.
+
+        Parameters
+        ----------
+        skill
+
+        """
+        moment_dict = {1: "first", 2: "repeat", 3: "end"}
+        desc = f"get the path shown after the repeat" \
+               f" lessons of skill {skill} "
+        scid = f"shown_path_repeat"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.logs.copy()
+        for user in tqdm(self.att['UserId'].unique(), desc=desc):
+            set_logs = data.loc[
+                (data.user_id == user) &
+                (data.screen == 3) &
+                (data.action == 2)]
+            clicked_skill = data.loc[
+                (data.user_id == user) &
+                (data.screen == 2) &
+                (data.action == 1)]
+            clicked_skill["skill"] = clicked_skill.object_id
+            set_logs = set_logs.append(clicked_skill).sort_index()
+            set_logs.skill = set_logs.skill.fillna(method='ffill')
+            set_logs = set_logs.loc[(set_logs.skill == self.real_skill[skill])
+                                    & (set_logs.screen == 3)
+                                    & (set_logs.object_id == 2)]
+            if len(set_logs) > 0:
+                value = set_logs['info'].values[-1]
+            else:
+                value = 999
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
 
 if __name__ == "__main__":
     import pipeline

@@ -18,6 +18,7 @@ class DataLoader:
         self.file_name = f_name or "./res/leerpadenapp.xlsx"
         self.sheetname = s_name or "AllData"
         self.data = None
+        self.log_data = None
         self.quick_loaded = False
 
     def load(self, from_csv=False, quick_loading=True):
@@ -129,3 +130,28 @@ class DataLoader:
                 filters[key])].reset_index(drop=True)
         self.data.loc[self.data.Correct > 1, "Correct"] = 1
         return self.data.copy()
+
+    def load_log(self, f_name="./res/logdata.csv"):
+        """
+        Load the log data from the csv file containing all logs from the app.
+
+        Returns
+        -------
+        pandas DataFrame:
+            The log data.
+        """
+
+        self.log_data = pd.read_csv(f_name, index_col=2, parse_dates=[
+            "date_time"])
+        self.log_data.drop(self.log_data.columns[[0, 1]], axis=1,
+                           inplace=True)
+        self.log_data = self.log_data.loc[self.log_data.user_id > 2999]
+        self.log_data = self.log_data.loc[self.log_data.index <
+                                          pd.datetime(2018, 11, 17)]
+        return self.log_data
+
+
+if __name__ == "__main__":
+    print(DataLoader().load_log().head())
+    print(DataLoader().load_log().tail())
+

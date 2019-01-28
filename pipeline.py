@@ -15,7 +15,7 @@ import numpy as np
 
 
 def run_pipeline(ql=True):
-    data, first_att_data, transfer_data = load(ql)
+    data, first_att_data, transfer_data, log_data = load(ql)
     # inspect(data)
     print(transfer_data.LOID.head())
     print("Processing data")
@@ -23,87 +23,97 @@ def run_pipeline(ql=True):
     phases = ["pre", "gui", "nap", "ap", "rap", "post"]
     skills = data.LOID.unique()
     processor = Processor(data, first_att_data, saver.short, saver.long,
-                          phases)
-    for phase in ["pre", "post"]:
-        processor.count_total_correct_phase_exercises(phase)
-    processor.calculate_gain()
-    processor.get_transfer_score(transfer_data)
-    processor.count_total_exercises_made()
-    processor.count_total_exercises_correct()
-    processor.count_total_exercises_made_att()
-    processor.count_total_exercises_correct_att()
-    for phase in ["pre", "post"]:
-        for skill in skills:
-            processor.skill_count_total_correct_phase_exercise(skill, phase)
-    for skill in skills:
-        processor.calculate_gain_per_skill(skill)
-    for skill in skills:
-        processor.get_last_ability_of_skill(skill)
-    for skill in skills:
-        processor.count_total_exercises_made_per_skill(skill)
-    for skill in skills:
-        processor.count_total_exercises_correct_per_skill(skill)
-    for skill in skills:
-        processor.calculate_percentage_correct_per_skill(skill)
-    for skill in skills:
-        processor.count_total_exercises_made_att_per_skill(skill)
-    for skill in skills:
-        processor.count_total_exercises_correct_att_per_skill(skill)
-    for skill in skills:
-        processor.calculate_percentage_correct_att_per_skill(skill)
-    for skill in skills:
-        processor.count_total_adaptive_per_skill(skill)
-    for skill in skills:
-        processor.count_correct_adaptive_per_skill(skill)
-    for skill in skills:
-        processor.calculate_percentage_correct_adaptive_per_skill(skill)
-    for skill in skills:
-        processor.count_total_adaptive_att_per_skill(skill)
-    for skill in skills:
-        processor.count_correct_adaptive_att_per_skill(skill)
-    for skill in skills:
-        processor.calculate_percentage_correct_adaptive_att_per_skill(skill)
-    for skill in skills:
-        processor.add_skill_to_long_file(skill)
-    for skill in skills:
-        processor.process_curves(skill, method="exclude_single_strays",
-                                 do_plot=True)
-    for skill in skills:
-        processor.calculate_type_curve(skill)
-    for skill in skills:
-        processor.get_phase_of_last_peak(skill)
-    for skill in skills:
-        processor.get_phase_of_last_peak(skill)
-    for phase in phases:
-        for skill in skills:
-            processor.count_first_attempts_per_skill(phase, skill)
-    # FOR TESTING ONLY<- DO REMOVE
+                          phases, log_data)
+    # for phase in ["pre", "post"]:
+    #     processor.count_total_correct_phase_exercises(phase)
+    # processor.calculate_gain()
+    # processor.get_transfer_score(transfer_data)
+    # processor.count_total_exercises_made()
+    # processor.count_total_exercises_correct()
+    # processor.count_total_exercises_made_att()
+    # processor.count_total_exercises_correct_att()
     # for phase in ["pre", "post"]:
     #     for skill in skills:
-    #         processor.count_total_phase_exercises(phase, skill)
-    # END TESTING
+    #         processor.skill_count_total_correct_phase_exercise(skill, phase)
+    # for skill in skills:
+    #     processor.calculate_gain_per_skill(skill)
+    # for skill in skills:
+    #     processor.get_last_ability_of_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_exercises_made_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_exercises_correct_per_skill(skill)
+    # for skill in skills:
+    #     processor.calculate_percentage_correct_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_exercises_made_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_exercises_correct_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.calculate_percentage_correct_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_adaptive_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_correct_adaptive_per_skill(skill)
+    # for skill in skills:
+    #     processor.calculate_percentage_correct_adaptive_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_total_adaptive_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.count_correct_adaptive_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.calculate_percentage_correct_adaptive_att_per_skill(skill)
+    # for skill in skills:
+    #     processor.add_skill_to_long_file(skill)
     for skill in skills:
-        processor.calculate_general_spikiness(skill)
+        processor.process_wrong_curves(skill, method="exclude_single_strays",
+                                       do_plot=False)
+    # for skill in skills:
+    #     processor.process_curves(skill, method="exclude_single_strays",
+    #                              do_plot=True)
     for skill in skills:
-        processor.calculate_phase_spikiness(skill, phases)
+        processor.calculate_type_curve(skill)
+    # for skill in skills:
+    #     processor.get_phase_of_last_peak(skill)
+    # for skill in skills:
+    #     processor.get_phase_of_last_peak(skill)
+    # for phase in phases:
+    #     for skill in skills:
+    #         processor.count_first_attempts_per_skill(phase, skill)
+    # # FOR TESTING ONLY<- DO REMOVE
+    # # for phase in ["pre", "post"]:
+    # #     for skill in skills:
+    # #         processor.count_total_phase_exercises(phase, skill)
+    # # END TESTING
+    # for skill in skills:
+    #     processor.calculate_general_spikiness(skill)
+    # for skill in skills:
+    #     processor.calculate_phase_spikiness(skill, phases)
+    # for skill in skills:
+    #     processor.get_total_amount_of_peaks(skill)
+    # for phase in phases:
+    #     for skill in skills:
+    #         processor.get_peaks_per_skill_per_phase(skill, phase)
+    # for skill in skills:
+    #     processor.get_total_amount_of_trans_peaks(skill)
+    # for phase in phases:
+    #     for skill in skills:
+    #         processor.get_trans_peaks_per_skill_per_phase(skill, phase)
+    # for skill in skills:
+    #     for moment in [1, 2, 3]:
+    #         processor.get_setgoal(skill, moment)
     for skill in skills:
-        processor.get_total_amount_of_peaks(skill)
-    for phase in phases:
-        for skill in skills:
-            processor.get_peaks_per_skill_per_phase(skill, phase)
-    for skill in skills:
-        processor.get_total_amount_of_trans_peaks(skill)
-    for phase in phases:
-        for skill in skills:
-            processor.get_trans_peaks_per_skill_per_phase(skill, phase)
+        processor.get_shown_path_after_first_lesson(skill)
+        # processor.get_shown_path_after_repeat_lesson(skill)
 
-    save(saver, processor, f_name="leerpaden")
+    save(saver, processor, f_name="test")
 
 
 def load(ql):
     print("Loading data")
     loader = DataLoader(f_name="./res/leerpaden_app.xlsx", s_name="Blad1")
     data, transfer_data = loader.load(quick_loading=ql)
+    log_data =loader.load_log()
     if loader.quick_loaded is False:
         print("Organizing data")
         # data["DateTime"] = loader.combine_date_time(data["SubmitDate"],
@@ -120,7 +130,7 @@ def load(ql):
         loader.quick_save(data)
     first_att_data = loader.first_attempts_only(['UserId', 'ExerciseId',
                                                  'LOID'], df=data)
-    return data, first_att_data, transfer_data
+    return data, first_att_data, transfer_data, log_data
 
 
 def correct(data):
