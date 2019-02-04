@@ -440,14 +440,21 @@ class Processor:
     def process_wrong_curves(self, skill, do_plot=False, method="biggest"):
         desc = f"Processing curves for skill {skill}"
         # print(self.data.columns)
-        data = self.data.copy()
+        data = self.att.copy()
         data = data.loc[
-            (self.data.DateTime < pd.datetime(2018, 11, 15))]
-        for user in tqdm(data['UserId'].unique(), desc=desc):
+            # (data.DateTime > pd.datetime(2018, 11, 10))
+            # &
+            (data.DateTime < pd.datetime(2018, 11, 15))
+            ]
+        for user in [3011]:  # tqdm(data['UserId'].unique(), desc=desc):
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill)]
-            print(select.LOID.head())
-            print(select.LOID.tail())
+            select.loc[select.ExerciseId == 1713996, 'Correct'] = 3
+            print(select.loc[:, ['DateTime', 'LOID', 'Correct']].head(40))
+            for i in range(len(select), 1, -1):
+                print(curve.get_type(curve.get_curve(select.head(i))))
+                print(' ', curve.get_type(curve.get_curve(select.tail(i))))
+
             if len(select) > 3:
                 user_curve = curve.get_curve(select)
                 key = f"{user}_{skill}"
@@ -790,10 +797,13 @@ class Processor:
                 (data.action == 1)]
             clicked_skill["skill"] = clicked_skill.object_id
             set_logs = set_logs.append(clicked_skill).sort_index()
+            print(set_logs.head(len(set_logs)))
             set_logs.skill = set_logs.skill.fillna(method='ffill')
             set_logs = set_logs.loc[(set_logs.skill == self.real_skill[skill])
                                     & (set_logs.screen == 3)
-                                    & (set_logs.object_id == 1)]
+                                    & (set_logs.object_id == 1)
+                                    & (set_logs.index < pd.datetime(
+                                           2018, 11, 15))]
             if len(set_logs) > 0:
                 value = set_logs['info'].values[0]
             else:

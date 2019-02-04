@@ -65,12 +65,12 @@ def run_pipeline(ql=True):
     #     processor.calculate_percentage_correct_adaptive_att_per_skill(skill)
     # for skill in skills:
     #     processor.add_skill_to_long_file(skill)
-    for skill in skills:
-        processor.process_wrong_curves(skill, method="exclude_single_strays",
-                                       do_plot=False)
     # for skill in skills:
-    #     processor.process_curves(skill, method="exclude_single_strays",
-    #                              do_plot=True)
+    #     processor.process_wrong_curves(skill, method="exclude_single_strays",
+    #                                    do_plot=False)
+    for skill in skills:
+        processor.process_curves(skill, method="exclude_single_strays",
+                                 do_plot=True)
     for skill in skills:
         processor.calculate_type_curve(skill)
     # for skill in skills:
@@ -104,9 +104,9 @@ def run_pipeline(ql=True):
     #         processor.get_setgoal(skill, moment)
     for skill in skills:
         processor.get_shown_path_after_first_lesson(skill)
-        # processor.get_shown_path_after_repeat_lesson(skill)
+        processor.get_shown_path_after_repeat_lesson(skill)
 
-    save(saver, processor, f_name="test")
+    save(saver, processor, f_name="3011")
 
 
 def load(ql):
