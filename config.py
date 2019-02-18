@@ -39,3 +39,18 @@ LEARNING_GOALS = [7771, 7789, 8025]
 IMMEDIATE_PEAK_BOUNDARY = 10
 MINIMUM_CHANGE = 0.015
 MAXIMIMUM_DISTANCE_CLOSE_PEAKS = 25
+
+use_estimated = False
+if use_estimated is True:
+    PARAMETER_L = [0.132, .027, 0.747]
+    PARAMETER_T = [0.082, .026, 0.134]
+    PARAMETER_G = [0.3, 0.3, 0.107]
+    PARAMETER_S = [0.1, 0.1, 0.1]
+
+no_limit = True
+if no_limit is True:
+    PARAMETER_L = [0.25, .047, 0.773]
+    PARAMETER_T = [0.1, .021, 0.127]
+    PARAMETER_G = [0.7, 0.356, 0.106]
+    PARAMETER_S = [0.35, 0.226, 0.195]
+

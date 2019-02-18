@@ -14,7 +14,7 @@ from phase_finder import PhaseFinder, pre_ids as pi
 import numpy as np
 
 
-def run_pipeline(ql=True):
+def run_pipeline(ql=True, estimate_parameters=False):
     data, first_att_data, transfer_data, log_data = load(ql)
     # inspect(data)
     print(transfer_data.LOID.head())
@@ -24,6 +24,8 @@ def run_pipeline(ql=True):
     skills = data.LOID.unique()
     processor = Processor(data, first_att_data, saver.short, saver.long,
                           phases, log_data)
+    if estimate_parameters is True:
+        parameters = processor.estimate_parameters(skills)
     # for phase in ["pre", "post"]:
     #     processor.count_total_correct_phase_exercises(phase)
     # processor.calculate_gain()
@@ -70,43 +72,43 @@ def run_pipeline(ql=True):
     #                                    do_plot=False)
     for skill in skills:
         processor.process_curves(skill, method="exclude_single_strays",
-                                 do_plot=True)
+                                 do_plot=False)
     for skill in skills:
         processor.calculate_type_curve(skill)
-    # for skill in skills:
-    #     processor.get_phase_of_last_peak(skill)
-    # for skill in skills:
-    #     processor.get_phase_of_last_peak(skill)
-    # for phase in phases:
-    #     for skill in skills:
-    #         processor.count_first_attempts_per_skill(phase, skill)
+    for skill in skills:
+        processor.get_phase_of_last_peak(skill)
+    for skill in skills:
+        processor.get_phase_of_last_peak(skill)
+    for phase in phases:
+        for skill in skills:
+            processor.count_first_attempts_per_skill(phase, skill)
     # # FOR TESTING ONLY<- DO REMOVE
     # # for phase in ["pre", "post"]:
     # #     for skill in skills:
     # #         processor.count_total_phase_exercises(phase, skill)
     # # END TESTING
-    # for skill in skills:
-    #     processor.calculate_general_spikiness(skill)
-    # for skill in skills:
-    #     processor.calculate_phase_spikiness(skill, phases)
-    # for skill in skills:
-    #     processor.get_total_amount_of_peaks(skill)
-    # for phase in phases:
-    #     for skill in skills:
-    #         processor.get_peaks_per_skill_per_phase(skill, phase)
-    # for skill in skills:
-    #     processor.get_total_amount_of_trans_peaks(skill)
-    # for phase in phases:
-    #     for skill in skills:
-    #         processor.get_trans_peaks_per_skill_per_phase(skill, phase)
+    for skill in skills:
+        processor.calculate_general_spikiness(skill)
+    for skill in skills:
+        processor.calculate_phase_spikiness(skill, phases)
+    for skill in skills:
+        processor.get_total_amount_of_peaks(skill)
+    for phase in phases:
+        for skill in skills:
+            processor.get_peaks_per_skill_per_phase(skill, phase)
+    for skill in skills:
+        processor.get_total_amount_of_trans_peaks(skill)
+    for phase in phases:
+        for skill in skills:
+            processor.get_trans_peaks_per_skill_per_phase(skill, phase)
     # for skill in skills:
     #     for moment in [1, 2, 3]:
     #         processor.get_setgoal(skill, moment)
-    for skill in skills:
-        processor.get_shown_path_after_first_lesson(skill)
-        processor.get_shown_path_after_repeat_lesson(skill)
+    # for skill in skills:
+    #     processor.get_shown_path_after_first_lesson(skill)
+    #     processor.get_shown_path_after_repeat_lesson(skill)
 
-    save(saver, processor, f_name="3011")
+    save(saver, processor, f_name="new_parameters")
 
 
 def load(ql):
@@ -213,4 +215,5 @@ def inspect(data):
 
 if __name__ == "__main__":
     quick_loading = True
-    run_pipeline(quick_loading)
+    estimate_parameters = False
+    run_pipeline(quick_loading, estimate_parameters)
