@@ -8,7 +8,8 @@ Set the phase next to the data.
 
 import pandas as pd
 import numpy as np
-from config import pre_ids, post_ids, nap_ids, gui_ids
+from config import pre_ids, post_ids, nap_ids, gui_ids, gynzy_pre_ids, \
+    gynzy_post_ids, LEARNING_GOALS
 all_ids = pre_ids + post_ids + nap_ids + gui_ids
 
 class PhaseFinder:
@@ -114,7 +115,7 @@ class PhaseFinder:
             else:
                 self.ap_day = {"post": user_data.iloc[0].DateTime.day}
             self.gui_day = {}
-            for skill in [8025, 7789, 7771]:
+            for skill in LEARNING_GOALS:
                 self.gui_len[skill] = len(data.loc[
                                               (data.UserId == user) &
                                               (data.ExerciseId.isin(gui_ids)) &
@@ -225,6 +226,66 @@ class PhaseFinder:
                 print("nap", len(nap_data), len(all_nap))
                 print("ap", len(ap_data), len(all_ap))
                 print("rap", len(rap_data), len(all_rap))
+
+    def find_gynzy_phases(self, data):
+        exclude_post_ids = [13862, 5471, 5472, 13599, 13634, 13655, 13668,
+                            13844, 14109, 14208, 14215, 14065, 14556, 14557,
+                            14568, 13737, 13833, 13835, 13880, 14323, 14331,
+                            14543, 13744, 14116, 14326, 13727, 13936, 14002,
+                            13768, 14273, 15503, 15461, 15911, 15610, 15614,
+                            16195, 16216, 15483, 15961, 16099, 16103, 16124,
+                            15613, 16208, 15834, 15838, 15939, 15944, 15524,
+                            16108, 16109, 15814, 15912, 15889, 15900, 15926,
+                            15995, 16000, 16031, 16130, 16136, 15924, 16065,
+                            15692, 15436, 15751, 16201, 15502, 15611, 15640,
+                            15643, 15930, 15931, 16072, 16085, 16764, 16765, ]
+        for i in range(16702, 16726):
+            exclude_post_ids.append(i)
+        data["phase"] = ""
+        for user in data.UserId.unique():
+            print(f"processing {user}")
+            user_data = data.loc[data.UserId == user].sort_values("DateTime") \
+                .reset_index()
+            for skill in LEARNING_GOALS:
+                self.gui_len[skill] = len(data.loc[
+                                              (data.UserId == user) &
+                                              (data.ExerciseId.isin(gui_ids)) &
+                                              (data.LOID == skill)
+                                              ])
+            num_pre = 0
+            pre_days = ['29', '05']
+            post_days = ['05', '12']
+            first_day = user_data.iloc[0].DateTime[8:10]
+            last_day = user_data.iloc[-1].DateTime[8:10]
+            if last_day == '12':
+                post_days = ['12']
+
+            if last_day in ['04', '05']:
+                pre_days = ['29']
+
+            if first_day == '08':
+                pre_days = ['08']
+
+            for id_, row in user_data.iterrows():
+                if row.ExerciseId in gynzy_pre_ids and \
+                        row.DateTime[8:10] in pre_days:
+                    data.loc[row['index'], 'phase'] = "pre"
+                    num_pre += 1
+                    # print(row.DateTime[8:10])
+                if row.ExerciseId in gynzy_post_ids and \
+                        row.DateTime[8:10] in post_days and \
+                        row['index'] not in exclude_post_ids:
+                    data.loc[row['index'], 'phase'] = "post"
+            user_data = data.loc[data.UserId == user].sort_values("DateTime") \
+                            .reset_index()
+            post_len = len(user_data.loc[user_data.phase == 'post'].values)
+            pre_len = len(user_data.loc[user_data.phase == 'pre'].values)
+
+            print(f"total pre ids: {pre_len}; total post ids: {post_len}; \n"
+                  f"first day: {first_day}; last day: {last_day}")
+            if pre_len > 24:
+                print(user_data.loc[user_data.phase=='pre'].values)
+        return data
 
 
 if __name__ == "__main__":

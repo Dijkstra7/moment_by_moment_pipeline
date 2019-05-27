@@ -3,6 +3,8 @@ import config
 
 def get_type(curve):
     n_peaks, p_peaks = get_peaks(curve)
+    print(f"the number of peaks is {n_peaks} and they are at locations "
+          f"{p_peaks}")
     if n_peaks == 1:
         if p_peaks[0] < config.IMMEDIATE_PEAK_BOUNDARY:
             return 2
@@ -33,10 +35,10 @@ def get_peaks(curve):
 def get_curve(df):
     loid = df.LOID.values[0]
     # print(loid)
-    p_l = config.PARAMETER_L[2-config.LEARNING_GOALS.index(loid)]
-    p_t = config.PARAMETER_T[2-config.LEARNING_GOALS.index(loid)]
-    p_g = config.PARAMETER_G[2-config.LEARNING_GOALS.index(loid)]
-    p_s = config.PARAMETER_S[2-config.LEARNING_GOALS.index(loid)]
+    p_l = config.PARAMETER_L[config.LEARNING_GOALS.index(loid)]
+    p_t = config.PARAMETER_T[config.LEARNING_GOALS.index(loid)]
+    p_g = config.PARAMETER_G[config.LEARNING_GOALS.index(loid)]
+    p_s = config.PARAMETER_S[config.LEARNING_GOALS.index(loid)]
     ln = get_ln(df, p_l, p_t, p_g, p_s)
     n_ln_t = [(1 - n) * p_t for n in ln]
     n_ln_n_t = [(1 - n) * (1 - p_t) for n in ln]

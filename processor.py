@@ -403,18 +403,99 @@ class Processor:
         print("Adding skill representations to long file")
         self.long[f"Skill_{loids[skill]}"] = skill
 
-    def process_curves(self, skill, do_plot=False, method="biggest"):
+    def process_curves_babette(self, skill, do_plot=False, method="biggest"):
         desc = f"Processing curves for skill {skill}"
         data = self.att.copy()
         for user in tqdm(data['UserId'].unique(), desc=desc):
+            # if user != 3010:
+            #     continue
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill)]
+
+            # ## Testing inspection
+            # print(user)
+            # print(select.values)
+            # dates = select.DateTime.dt.date.unique()
+            # for i in range(len(select)):
+            #     sselect = select.iloc[:i]
+            #     if len(sselect) > 3:
+            #         for j in range(len(sselect)):
+            #             ssselect = sselect.iloc[j:]
+            #             if len(ssselect) > 3:
+            #                 ssselect_curve = curve.get_curve(ssselect)
+            #                 type_ = curve.get_type(ssselect_curve)
+            #                 print(type_, end=" ")
+            #                 if type_ == 4:
+            #                     print(f"({i}, {j})", end=" ")
+            #                     # print(ssselect.values)
+            #                     # print(ssselect.Correct.values)
+            #
+            #         print("")
+            #
+            # ## End testing
+
             if len(select) > 3:
                 user_curve = curve.get_curve(select)
                 key = f"{user}_{skill}"
                 self.curves[key] = user_curve
                 self.n_peaks[key], self.p_peaks[key] = \
                     curve.get_peaks(user_curve)
+                self.phase_curves[f"{user}_{skill}"] = 999
+                self.phase_ids[f"{user}_{skill}"] = 999
+            else:
+                self.curves[f"{user}_{skill}"] = 999
+                self.n_peaks[f"{user}_{skill}"] = 999
+                self.p_peaks[f"{user}_{skill}"] = 999
+                self.phase_curves[f"{user}_{skill}"] = 999
+                self.phase_ids[f"{user}_{skill}"] = 999
+            if do_plot is True:
+                self.plotter.plot_save(
+                    [self.curves[f"{user}_{skill}"],
+                     select.Correct.values * .05 - 1],
+                    f_name=
+                    # f"{curve.get_type(curve.get_curve(select))}_"
+                    f"babette_total/{user}_{skill}"
+                )
+
+    def process_curves(self, skill, do_plot=False, method="biggest",
+                       folder="simone"):
+        desc = f"Processing curves for skill {skill}"
+        data = self.att.copy()
+        for user in tqdm(data['UserId'].unique(), desc=desc):
+            # if user != 3010:
+            #     continue
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill)]
+
+            # ## Testing inspection
+            # print(user)
+            # print(select.values)
+            # dates = select.DateTime.dt.date.unique()
+            # for i in range(len(select)):
+            #     sselect = select.iloc[:i]
+            #     if len(sselect) > 3:
+            #         for j in range(len(sselect)):
+            #             ssselect = sselect.iloc[j:]
+            #             if len(ssselect) > 3:
+            #                 ssselect_curve = curve.get_curve(ssselect)
+            #                 type_ = curve.get_type(ssselect_curve)
+            #                 print(type_, end=" ")
+            #                 if type_ == 4:
+            #                     print(f"({i}, {j})", end=" ")
+            #                     # print(ssselect.values)
+            #                     # print(ssselect.Correct.values)
+            #
+            #         print("")
+            #
+            # ## End testing
+
+            if len(select) > 3:
+                user_curve = curve.get_curve(select)
+                key = f"{user}_{skill}"
+                self.curves[key] = user_curve
+                self.n_peaks[key], self.p_peaks[key] = \
+                    curve.get_peaks(user_curve)
+                print(select.phase.values)
                 user_phases = select.phase.values
                 for phase in self.phases:
                     phase_key = f"{key}_{phase}"
@@ -426,15 +507,15 @@ class Processor:
                 self.curves[f"{user}_{skill}"] = 999
                 self.n_peaks[f"{user}_{skill}"] = 999
                 self.p_peaks[f"{user}_{skill}"] = 999
-                self.phase_curves = 999
-                self.phase_ids = 999
+                self.phase_curves[f"{user}_{skill}"] = 999
+                self.phase_ids[f"{user}_{skill}"] = 999
             if do_plot is True:
                 self.plotter.plot_save(
                     [self.curves[f"{user}_{skill}"],
                      select.Correct.values * .05 - 1],
                     f_name=
                     # f"{curve.get_type(curve.get_curve(select))}_"
-                    f"{user}_{skill}", phase_data=select.phase.values
+                    f"{folder}/{user}_{skill}", phase_data=select.phase.values
                 )
 
     def process_wrong_curves(self, skill, do_plot=False, method="biggest"):
@@ -445,7 +526,7 @@ class Processor:
             # (data.DateTime > pd.datetime(2018, 11, 10))
             # &
             (data.DateTime < pd.datetime(2018, 11, 15))
-            ]
+        ]
         for user in [3011]:  # tqdm(data['UserId'].unique(), desc=desc):
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill)]
@@ -552,6 +633,7 @@ class Processor:
             if skill_curve == 999:
                 value = 999
             else:
+                print(f"For user {user} ", end="")
                 value = curve.get_type(skill_curve)
 
             self.short.loc[(self.short.UserId == user) &
@@ -698,7 +780,7 @@ class Processor:
         for user in tqdm(data['UserId'].unique(), desc=desc):
             peaks = self.p_peaks[f"{user}_{skill}"]
             user_phases = data.loc[(data.UserId == user) &
-                              (data.LOID == skill)].phase.values
+                                   (data.LOID == skill)].phase.values
             prev_phase = None
             value = 0
             for pos, phase in enumerate(user_phases):
@@ -803,7 +885,7 @@ class Processor:
                                     & (set_logs.screen == 3)
                                     & (set_logs.object_id == 1)
                                     & (set_logs.index < pd.datetime(
-                                           2018, 11, 15))]
+                2018, 11, 15))]
             if len(set_logs) > 0:
                 value = set_logs['info'].values[0]
             else:
@@ -852,33 +934,42 @@ class Processor:
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value
 
-    def estimate_parameters(self, skills, params_min=None, params_max=None):
-        extractor = ParameterExtractor(params_min, params_max=[1., 1., .5, .5])
+    def estimate_parameters(self, skills, params_min=None, params_max=None,
+                            grain=1000):
+        extractor = ParameterExtractor(params_min, params_max=[1., 1., .3, .1])
         for skill in skills:
             print(f"Searching for parameters for skill {skill}")
             # Get data from the skill
-            data = self.data.copy().loc[self.data.LOID == skill]
-            
+            data = self.att.copy().loc[self.data.LOID == skill]
+
             # Sort the data on user, then on time.
             data = data.sort_values(by=['UserId', 'DateTime'])
-            
+            print(data.head(100).values)
+
             # Extract the correctness of the answers
             answers = data.loc[:, 'Correct'].values
-            
+
             # Extract whether we are viewing the same student (0), or a new one
             diff = data.loc[:, 'UserId'].diff().values  # Extract difference
             diff[0] = 1
             same = [1 if d == 0 else 0 for d in diff]
-            extractor.smart_ssr(answers, same, grain=1000)
-            
-            
+            extractor.smart_ssr(answers, same, grain=grain)
+
+    def generate_kappa_file(self):
+        data = self.data.copy()
+        data = data.loc[data.phase.isin(["pre", "post"])]
+        kappa = pd.DataFrame(index=data.UserId.unique())
+        for _, item in data.iterrows():
+            kappa.loc[item.UserId, item.ExerciseId] = item.Correct
+        kappa.to_excel("output\kappa_file.xlsx", na_rep=999)
 
 
 class ParameterExtractor:
+
     """
     Calculates the pre-calculated parameters.
 
-    Has an option for brute force calculating the parameters or for using a 
+    Has an option for brute force calculating the parameters or for using a
     heuristic approach.
     """
 
@@ -1020,7 +1111,7 @@ class ParameterExtractor:
                 print("Converging on best parameters being: ", all_best)
                 break
         return best_l0, best_t, best_g, best_s
-    
+
     
 if __name__ == "__main__":
     import pipeline

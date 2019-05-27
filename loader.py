@@ -11,11 +11,15 @@ import pickle
 import pandas as pd
 from datetime import datetime
 
+import xlrd
+
+import config
+
 
 class DataLoader:
 
     def __init__(self, f_name=None, s_name=None):
-        self.file_name = f_name or "./res/leerpadenapp.xlsx"
+        self.file_name = f_name or "./res/leerpaden_app.xlsx"
         self.sheetname = s_name or "AllData"
         self.data = None
         self.log_data = None
@@ -39,7 +43,10 @@ class DataLoader:
         if from_csv is True:
             data = pd.read_csv(self.file_name, infer_datetime_format=True)
         else:
-            data = pd.read_excel(self.file_name, sheet_name=self.sheetname)
+            try:
+                data = pd.read_excel(self.file_name, sheet_name=self.sheetname)
+            except xlrd.biffh.XLRDError:
+                data = pd.read_excel(self.file_name)
         data.rename(columns={"LearningObjectiveId": "LOID"}, inplace=True)
         self.data = data.copy()
         return data, transfer_data
@@ -128,7 +135,7 @@ class DataLoader:
         for key in filters:
             self.data = self.data.loc[~self.data[key].isin(
                 filters[key])].reset_index(drop=True)
-        self.data.loc[self.data.Correct > 1, "Correct"] = 1
+        # self.data.loc[self.data.Correct > 1, "Correct"] = 1
         return self.data.copy()
 
     def load_log(self, f_name="./res/logdata.csv"):
@@ -150,8 +157,32 @@ class DataLoader:
                                           pd.datetime(2018, 11, 17)]
         return self.log_data
 
+    def load_jorieke_data(self, f_name=None, s_name="AllData"):
+        data = pd.read_excel(f_name or config.nadine_file_name,
+                             sheet_name=s_name)
+        data.rename(columns={"LearningObjectiveId": "LOID"}, inplace=True)
+        return data
+
+    def load_jorieke_pilot_data(self, f_name=None, s_name="pilot1",
+                               s_name2="pilot2"):
+        data = pd.read_excel(f_name or config.nadine_file_name,
+                             sheet_name=s_name)
+        data.rename(index=str, columns={"SubmitDate": "Date"})
+        data = data.loc[:, ~data.columns.str.contains('^Unnamed')]
+        other_sheet = pd.read_excel(f_name or config.nadine_file_name,
+                                    sheet_name=s_name2)
+        print(data.info())
+        print(other_sheet.info())
+        print(data.tail())
+        print(other_sheet.tail())
+        data = data.append(other_sheet)
+        data.rename(columns={"LearningObjectiveId": "LOID"}, inplace=True)
+        return data
+
+    def load_simone_data(self, f_name=None, s_name=""):
+        pass
+
 
 if __name__ == "__main__":
-    print(DataLoader().load_log().head())
-    print(DataLoader().load_log().tail())
+    print(DataLoader().load_simone_data().info())
 

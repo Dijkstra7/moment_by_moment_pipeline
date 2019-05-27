@@ -15,12 +15,30 @@ class Saver:
         self.data_dir = data_dir
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
+        print(df.LOID.unique)
         self.skills = df['LOID'].drop_duplicates().values
         self.short = self.set_up_short(df)
         self.long = self.set_up_long(df)
         if len(self.short)/3 != len(self.long):
-            print(len(self.short), len(self.long))
+            print(len(self.short), len(self.long), self.long.columns)
             print(self.short['LOID'].drop_duplicates())
+            print(self.short.head())
+            print(self.short.tail())
+            print(len(self.short.loc[self.short['LOID'] == 8232]))
+            print(len(self.short.loc[self.short['LOID'] == 8234]))
+            print(len(self.short.loc[self.short['LOID'] == 8240]))
+            for goal in self.short['LOID'].unique():
+                for user in self.long.UserId.values:
+                    if user not in \
+                            self.short.loc[self.short['LOID'] == goal].values:
+                        print(f"missing user {user} in goal {goal}")
+
+
+
+
+            print(self.skills)
+
+
             raise ValueError
 
     def set_up_short(self, df):
@@ -62,6 +80,7 @@ class Saver:
         return long
 
     def save(self, f_name):
+        print(f"Saving to directory {self.data_dir}")
         self.short.to_csv(f"{self.data_dir}\{f_name}_short.csv", na_rep=999)
         self.long.to_csv(f"{self.data_dir}\{f_name}_long.csv", na_rep=999)
         self.short.to_excel(f"{self.data_dir}\{f_name}_short.xlsx", na_rep=999)
