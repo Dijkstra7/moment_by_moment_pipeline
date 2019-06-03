@@ -13,9 +13,9 @@ from config import filters, transfer_filters, GYNZY
 from phase_finder import PhaseFinder, pre_ids as pi
 
 
-def run_pipeline(ql=True, estimate_parameters=False):
+def run_pipeline(ql=True, estimate_parameters=False, id_ = "simone"):
     data, first_att_data, transfer_data, log_data = load(
-        ql, "./res/simone_all_data.xlsx")
+        ql, "./res/simone_all_data.xlsx", id_)
     # inspect(data)
     print(transfer_data.LOID.head())
     print("Processing data")
@@ -108,10 +108,10 @@ def run_pipeline(ql=True, estimate_parameters=False):
     #     processor.get_shown_path_after_first_lesson(skill)
     #     processor.get_shown_path_after_repeat_lesson(skill)
 
-    save(saver, processor, f_name="simone")
+    save(saver, processor, f_name=id_)
 
 
-def load(ql, f_name="./res/leerpaden_app.xlsx"):
+def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
     print("Loading data")
     loader = DataLoader(f_name=f_name, s_name="Blad1")
     data, transfer_data = loader.load(quick_loading=ql)
@@ -126,7 +126,7 @@ def load(ql, f_name="./res/leerpaden_app.xlsx"):
         unfiltered = loader.sort_data_by(data, "DateTime")
         transfer_data = loader.filter(transfer_filters)
         data = loader.filter(filters, df=unfiltered)
-        if GYNZY is True:
+        if id_ in ["karlijn_en_babette"]:
             data = PhaseFinder().find_gynzy_phases(data)
         else:
             data = PhaseFinder().find_phases(data)
