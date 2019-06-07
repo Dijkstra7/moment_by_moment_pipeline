@@ -13,10 +13,10 @@ from config import filters, transfer_filters, GYNZY
 from phase_finder import PhaseFinder, pre_ids as pi
 
 
-def run_pipeline(ql=True, estimate_parameters=False, id_ = "simone"):
+def run_pipeline(ql=True, estimate_parameters=False, id_="simone"):
     data, first_att_data, transfer_data, log_data = load(
-        ql, "./res/simone_all_data.xlsx", id_)
-    # inspect(data)
+        ql, "./res/simone_all_data_all_attempts.xlsx", id_)
+    inspect(data)
     print(transfer_data.LOID.head())
     print("Processing data")
     saver = Saver(data)
@@ -29,7 +29,7 @@ def run_pipeline(ql=True, estimate_parameters=False, id_ = "simone"):
     for phase in ["pre", "post"]:
         processor.count_total_correct_phase_exercises(phase)
     processor.calculate_gain()
-    # processor.get_transfer_score(transfer_data)
+    processor.get_transfer_score(transfer_data)
     processor.count_total_exercises_made()
     processor.count_total_exercises_correct()
     processor.count_total_exercises_made_att()
@@ -115,7 +115,7 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
     print("Loading data")
     loader = DataLoader(f_name=f_name, s_name="Blad1")
     data, transfer_data = loader.load(quick_loading=ql)
-    log_data =loader.load_log()
+    log_data = loader.load_log()
     if loader.quick_loaded is False:
         print("Organizing data")
         # data["DateTime"] = loader.combine_date_time(data["SubmitDate"],
@@ -124,7 +124,10 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
                      'LOID', 'Correct', 'AbilityAfterAnswer']]
         print("Preprocessing data")
         unfiltered = loader.sort_data_by(data, "DateTime")
-        transfer_data = loader.filter(transfer_filters)
+        transfer_data = loader.first_attempts_only(['UserId', 'ExerciseId',
+                                                    'LOID'],
+                                                   df=transfer_data,
+                                                   copy_df=False)
         data = loader.filter(filters, df=unfiltered)
         if id_ in ["karlijn_en_babette"]:
             data = PhaseFinder().find_gynzy_phases(data)
@@ -135,6 +138,7 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
         loader.quick_save(data)
     first_att_data = loader.first_attempts_only(['UserId', 'ExerciseId',
                                                  'LOID'], df=data)
+    print(data.loc[data.UserId == 59491].tail(40).values)
     return data, first_att_data, transfer_data, log_data
 
 
@@ -158,7 +162,7 @@ def save(saver, processor, f_name="test"):
 def inspect(data):
     print("Inspecting data")
     inspect_users = []
-    # inspect_users = [2036]
+    inspect_users = [118472]
     allowed_same_phase_next = {"pre": ["gui", "pre", "ap"],
                                "gui": ["gui", "nap", "ap", "rap", "post",
                                        "pre"],
@@ -174,7 +178,7 @@ def inspect(data):
                                 "rap": ["rap", "post"],  # <- unsure
                                 "post": ["rap", "post"],
                                 "": ["pre", "gui"]}
-    for user in data.UserId.unique():
+    for user in inspect_users:  # data.UserId.unique():
         print ('==========\n', user)
         p = ""
         l = ""
@@ -192,10 +196,12 @@ def inspect(data):
         len_pre = len(data.loc[(data.phase == "pre") & (data.UserId == user)])
         len_post = len(data.loc[(data.phase == "post") &
                                 (data.UserId == user)])
-        if wrong_next_phase is True or len_post != 24 or len_pre != 24:
+        if len_post != 24 or len_pre != 24:  # or wrong_next_phase is True:
+
             len_all_pre = len(data.loc[(data.ExerciseId.isin(pi))
                                         & (data.UserId == user)])
             print(f"Total pre-ids:{len_all_pre}")
+            print(f"Total post-ids:{len_post}")
             for id_, row in data.loc[(data.UserId == user)
                                      # &
                                      # (~data.phase.isin(["pre", "post"]))

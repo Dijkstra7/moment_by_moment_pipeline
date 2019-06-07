@@ -53,8 +53,12 @@ class Processor:
                 select = data.loc[(data.phase == phase) &
                                   (data.UserId == user) &
                                   (data.Correct == 1)]
-                self.short.loc[self.short.UserId == user, cid] = len(select)
-                self.long.loc[self.long.UserId == user, cid] = len(select)
+                value = len(select)
+            else:
+                value = 0
+            self.short.loc[self.short.UserId == user, cid] = value
+            self.long.loc[self.long.UserId == user, cid] = value
+
 
     def count_total_phase_exercises(self, phase, skill):
         print(f"Tellen aantal gemaakt {phase}-phase voor skill {skill}")
@@ -143,6 +147,9 @@ class Processor:
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
         data = self.data.copy()
+        print(data.loc[data.UserId == 59491].tail(40).values)
+        data = data.drop_duplicates(subset=['UserId', 'ExerciseId', 'LOID', 'phase'])
+        print(data.loc[data.UserId == 59491].tail(40).values)
         for user in tqdm(data['UserId'].unique(), desc=desc):
             if len(data.loc[(data.phase == phase) &
                             (data.UserId == user) &

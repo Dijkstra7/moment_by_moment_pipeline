@@ -21,6 +21,7 @@ class PhaseFinder:
         self.gui_day = {}
         self.post_min_id = 0
         self.gui_len = {}
+        self.posts_seen = []
 
     def process_gui(self, row):
         if "rap" in self.ap_day:
@@ -54,6 +55,8 @@ class PhaseFinder:
     def process_pre(self, data, row, id_):
         if "rap" in self.ap_day or row.LOID in self.ap_day:
             return False
+        if row.DateTime.day == self.ap_day["post"]:
+            return False
         if row.ExerciseId in pre_ids:
             if self.pre_num < self.pre_max_id:
                 self.pre_num += 1
@@ -77,8 +80,10 @@ class PhaseFinder:
         if self.ap_day["post"] != row.DateTime.day:
             return False
         if row.ExerciseId in post_ids:
-            if row['index'] in self.poss_post['index'].values[-24:]:
-                return True
+            if row.ExerciseId in self.posts_seen:
+                return False
+            self.posts_seen.append(row.ExerciseId)
+            return True  # Also including not double attempts
         return False
 
     def process_ap(self, row):
@@ -103,12 +108,15 @@ class PhaseFinder:
     def find_phases(self, data: pd.DataFrame, verbose=1):
         data["phase"] = ""
         for user in data.UserId.unique():
-            print(f"processing {user}")
+            # if user == 59501:
+            #     print("processing with breakpoint")
+            # print(f"processing {user}")
             user_data = data.loc[data.UserId == user].sort_values("DateTime") \
                 .reset_index()
             self.post_min_id = len(user_data)-len(post_ids)-1
             self.poss_post = user_data.loc[user_data.ExerciseId.isin(post_ids)]
             self.pre_num = 0
+            self.posts_seen = []
             if len(self.poss_post > 0):
                 self.ap_day = {"post":
                                    self.poss_post.tail(1).iloc[0].DateTime.day}

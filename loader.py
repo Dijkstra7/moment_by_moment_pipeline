@@ -48,6 +48,8 @@ class DataLoader:
             except xlrd.biffh.XLRDError:
                 data = pd.read_excel(self.file_name)
         data.rename(columns={"LearningObjectiveId": "LOID"}, inplace=True)
+        transfer_data = data.loc[data.LOID == 7579]
+        data = data.loc[data.LOID.isin([7771, 7789, 8025])]
         self.data = data.copy()
         return data, transfer_data
 
@@ -92,7 +94,7 @@ class DataLoader:
                                     time.iloc[i].microsecond)
         return time.rename("DateTime")
 
-    def first_attempts_only(self, columns, df=None):
+    def first_attempts_only(self, columns, df=None, copy_df=True):
         """
         Deletes all first attempts
 
@@ -103,12 +105,17 @@ class DataLoader:
         columns: list of strs
             Columns on which we check whether they are duplicated. If yes,
             only keep earliest account
+        copy_df: bool
+            Whether to update the data dataframe or not.
 
         """
+        data = self.data.copy()
         if df is not None:
-            self.data = df.copy()
-        self.data.drop_duplicates(subset=columns, inplace=True)
-        return self.data.copy()
+            data = df
+        att_data = data.drop_duplicates(subset=columns)
+        # if copy_df is True:
+        #     self.data = data
+        return att_data
 
     def filter(self, filters, df=None):
         """
