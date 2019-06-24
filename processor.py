@@ -52,7 +52,7 @@ class Processor:
                             (data.UserId == user)]) > 0:
                 select = data.loc[(data.phase == phase) &
                                   (data.UserId == user) &
-                                  (data.Correct == 1)]
+                                  (data.Correct >= 1)]
                 value = len(select)
             else:
                 value = 0
@@ -83,7 +83,7 @@ class Processor:
 
     def count_total_exercises_made(self):
         print("Tellen gemaakt totaal")
-        cid = 'Totaal aantal opgaven'
+        cid = 'Totaal aantal alle pogingen'
         self.short[cid] = np.nan
         self.long[cid] = np.nan
         data = self.data
@@ -94,18 +94,18 @@ class Processor:
 
     def count_total_exercises_correct(self):
         print("Tellen goed totaal")
-        cid = 'Totaal aantal goed'
+        cid = 'Totaal goed alle pogingen'
         self.short[cid] = np.nan
         self.long[cid] = np.nan
         data = self.data
         for user in data['UserId'].drop_duplicates().values:
-            select_data = data.loc[(data.UserId == user) & (data.Correct == 1)]
+            select_data = data.loc[(data.UserId == user) & (data.Correct >= 1)]
             self.short[cid].loc[self.short.UserId == user] = len(select_data)
             self.long[cid].loc[self.long.UserId == user] = len(select_data)
 
     def count_total_exercises_made_att(self):
         print("Tellen gemaakt totaal first attempts")
-        cid = 'Totaal aantal opgaven first attempts'
+        cid = 'Totaal aantal unieke opgaven'
         self.short[cid] = np.nan
         self.long[cid] = np.nan
         data = self.att
@@ -116,12 +116,12 @@ class Processor:
 
     def count_total_exercises_correct_att(self):
         print("Tellen goed first attempts")
-        cid = 'Totaal aantal goed first attempts'
+        cid = 'Totaal aantal goed unieke opgaven'
         self.short[cid] = np.nan
         self.long[cid] = np.nan
         data = self.att
         for user in data['UserId'].drop_duplicates().values:
-            select_data = data.loc[(data.UserId == user) & (data.Correct == 1)]
+            select_data = data.loc[(data.UserId == user) & (data.Correct >= 1)]
             self.short[cid].loc[self.short.UserId == user] = len(select_data)
             self.long[cid].loc[self.long.UserId == user] = len(select_data)
 
@@ -132,7 +132,7 @@ class Processor:
         self.long[cid] = np.nan
         data = transfer_data
         for user in tqdm(data['UserId'].unique(), desc=desc):
-            select_data = data.loc[(data.UserId == user) & (data.Correct == 1)]
+            select_data = data.loc[(data.UserId == user) & (data.Correct >= 1)]
             self.short.loc[self.short.UserId == user, cid] = len(select_data)
             self.long.loc[self.long.UserId == user, cid] = len(select_data)
             if len(data.loc[(data.UserId == user)]) == 0:
@@ -157,7 +157,7 @@ class Processor:
                 select = data.loc[(data.phase == phase) &
                                   (data.UserId == user) &
                                   (data.LOID == skill) &
-                                  (data.Correct == 1)]
+                                  (data.Correct >= 1)]
                 self.short.loc[(self.short.UserId == user) &
                                (self.short.LOID == skill), scid] = len(select)
                 self.long.loc[self.long.UserId == user, lcid] = len(select)
@@ -194,8 +194,8 @@ class Processor:
 
     def count_total_exercises_made_per_skill(self, skill):
         desc = f"Tellen totaal gemaakte opgaven voor skill {skill}"
-        scid = f"Aantalopgave_skill"
-        lcid = f"Aantalopgave_{loids[skill]}"
+        scid = f"Aantalallepogingen_skill"
+        lcid = f"Aantalallepogingen_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
         data = self.data.copy()
@@ -213,8 +213,8 @@ class Processor:
 
     def count_total_exercises_correct_per_skill(self, skill):
         desc = f"Tellen totaal correct gemaakte opgaven voor skill {skill}"
-        scid = f"Aantalgoed_skill"
-        lcid = f"Aantalgoed_{loids[skill]}"
+        scid = f"Aantalgoedallepogingen_skill"
+        lcid = f"Aantalgoedallepogingen_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
         data = self.data.copy()
@@ -223,7 +223,7 @@ class Processor:
                             (data.LOID == skill)]) > 0:
                 select = data.loc[(data.UserId == user) &
                                   (data.LOID == skill) &
-                                  (data.Correct == 1)]
+                                  (data.Correct >= 1)]
 
                 value = len(select)
 
@@ -233,8 +233,8 @@ class Processor:
 
     def count_total_exercises_made_att_per_skill(self, skill):
         desc = f"Tellen totaal gemaakte eerste pogingen voor skill {skill}"
-        scid = f"Aantaleerstepoging_skill"
-        lcid = f"Aantaleerstepoging_{loids[skill]}"
+        scid = f"Aantaluniekeopgaven_skill"
+        lcid = f"Aantaluniekeopgaven_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
         data = self.att.copy()
@@ -253,8 +253,8 @@ class Processor:
     def count_total_exercises_correct_att_per_skill(self, skill):
         desc = f"Tellen correct gemaakte eerste pogingen voor skill " \
                f"{skill}"
-        scid = f"Goedeerstepoging_skill"
-        lcid = f"Goedeerstepoging_{loids[skill]}"
+        scid = f"Goeduniekeopgaven_skill"
+        lcid = f"Goeduniekeopgaven_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
         data = self.att.copy()
@@ -263,7 +263,7 @@ class Processor:
                             (data.LOID == skill)]) > 0:
                 select = data.loc[(data.UserId == user) &
                                   (data.LOID == skill) &
-                                  (data.Correct == 1)]
+                                  (data.Correct >= 1)]
 
                 value = len(select)
 
@@ -276,31 +276,34 @@ class Processor:
         scid = f"Percentagegoed_skill"
         lcid = f"Percentagegoed_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = round(
-            self.short.loc[self.short.LOID == skill, "Aantalgoed_skill"]
+            self.short.loc[self.short.LOID == skill, "Aantalgoedallepogingen_skill"]
             /
-            self.short.loc[self.short.LOID == skill, "Aantalopgave_skill"]
+            self.short.loc[self.short.LOID == skill,
+                           "Aantalallepogingen_skill"]
             , 2)
-        self.long[lcid] = round(self.long[f"Aantalgoed_{loids[skill]}"]
+        self.long[lcid] = round(self.long[f"Aantalgoedallepogingen_"
+                                          f"{loids[skill]}"]
                                 /
-                                self.long[f"Aantalopgave_{loids[skill]}"]
+                                self.long[f"Aantalallepogingen_"
+                                          f"{loids[skill]}"]
                                 , 2)
 
     def calculate_percentage_correct_att_per_skill(self, skill):
         print(f"Berekenen percentage correct eerste pogingen voor "
               f"skill {skill}")
-        scid = f"Percentagegoedpoging_skill"
-        lcid = f"Percentagegoedpoging_{loids[skill]}"
+        scid = f"Percentagegoeduniek_skill"
+        lcid = f"Percentagegoeduniek_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = round(
             self.short.loc[self.short.LOID == skill,
-                           "Goedeerstepoging_skill"]
+                           "Goeduniekeopgaven_skill"]
             /
             self.short.loc[self.short.LOID == skill,
-                           "Aantaleerstepoging_skill"]
+                           "Aantaluniekeopgaven_skill"]
             , 2)
         self.long[lcid] = round(
-            self.long[f"Goedeerstepoging_{loids[skill]}"]
+            self.long[f"Goeduniekeopgaven_{loids[skill]}"]
             /
-            self.long[f"Aantaleerstepoging_{loids[skill]}"]
+            self.long[f"Aantaluniekeopgaven_{loids[skill]}"]
             , 2)
 
     def count_total_adaptive_per_skill(self, skill):
@@ -330,7 +333,7 @@ class Processor:
             select = data.loc[(data.phase.isin(["ap", "rap"])) &
                               (data.UserId == user) &
                               (data.LOID == skill) &
-                              (data.Correct == 1)]
+                              (data.Correct >= 1)]
             value = len(select)
             self.short.loc[(self.short.UserId == user) &
                            (self.short.LOID == skill), scid] = value
@@ -356,8 +359,8 @@ class Processor:
     def count_total_adaptive_att_per_skill(self, skill):
         desc = f"Tellen aantal eerste pogingen in de adaptive phase voor " \
                f"skill {skill}"
-        scid = f"Aantalpogingadaptief_skill"
-        lcid = f"Aantalpogingadaptief_{loids[skill]}"
+        scid = f"Aantaluniekadaptief_skill"
+        lcid = f"Aantaluniekadaptief_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
         data = self.att.copy()
@@ -373,8 +376,8 @@ class Processor:
     def count_correct_adaptive_att_per_skill(self, skill):
         desc = f"Tellen aantal correct eerste pogingen in de adaptive-phase " \
                f"voor skill {skill}"
-        scid = f"Goedpogingadaptief_skill"
-        lcid = f"Goedpogingadaptief_{loids[skill]}"
+        scid = f"Goeduniekadaptief_skill"
+        lcid = f"Goeduniekadaptief_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
         data = self.att.copy()
@@ -382,7 +385,7 @@ class Processor:
             select = data.loc[(data.phase.isin(["ap", "rap"])) &
                               (data.UserId == user) &
                               (data.LOID == skill) &
-                              (data.Correct == 1)]
+                              (data.Correct >= 1)]
             value = len(select)
             self.short.loc[(self.short.UserId == user) &
                            (self.short.LOID == skill), scid] = value
@@ -391,19 +394,19 @@ class Processor:
     def calculate_percentage_correct_adaptive_att_per_skill(self, skill):
         print(f"Berekenen percentage correct eerste pogingen in de adaptive "
               f"phase voor skill {skill}")
-        scid = f"Percentagegoedpogingadaptief_skill"
-        lcid = f"Percentagegoedpogingadaptief_{loids[skill]}"
+        scid = f"Percentagegoeduniekadaptief_skill"
+        lcid = f"Percentagegoeduniekadaptief_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = round(
             self.short.loc[self.short.LOID == skill,
-                           "Goedpogingadaptief_skill"]
+                           "Goeduniekadaptief_skill"]
             /
             self.short.loc[self.short.LOID == skill,
-                           "Aantalpogingadaptief_skill"]
+                           "Aantaluniekadaptief_skill"]
             , 2)
         self.long[lcid] = round(
-            self.long[f"Goedpogingadaptief_{loids[skill]}"]
+            self.long[f"Goeduniekadaptief_{loids[skill]}"]
             /
-            self.long[f"Aantalpogingadaptief_{loids[skill]}"]
+            self.long[f"Aantaluniekadaptief_{loids[skill]}"]
             , 2)
 
     def add_skill_to_long_file(self, skill):
@@ -970,6 +973,464 @@ class Processor:
             kappa.loc[item.UserId, item.ExerciseId] = item.Correct
         kappa.to_excel("output\kappa_file.xlsx", na_rep=999)
 
+    def get_last_ability_first_lesson_of_skill(self, skill):
+        desc = f"Get last ability of first lesson of skill {skill} "
+        scid = f"vaardigheid_na_eerste_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (~np.isnan(data.AbilityAfterAnswer)) &
+                              (~data.DateTime.dt.day.isin([17, 21, 31]))]
+            select_days = select.DateTime.dt.day
+            if len(select_days.unique()) > 1:
+                select = select.loc[select.DateTime.dt.day !=
+                                    22]
+            print(user, skill, select_days.unique(), end="")
+            if len(select) > 0:
+                value = select['AbilityAfterAnswer'].values[-1]
+            else:
+                value = 999
+            print(f" {value}")
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_total_exercises_made_first_lesson(self, skill,
+                                              id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Get total exercise made in first lesson of skill {skill} "
+        scid = f"aantal_pogingen_gemaakt_in_eerste_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is not in the repeat lesson or in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
+                                                           22])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+            # 05-18 should be excluded, 06-18 not.
+            select = select.loc[~(select.DateTime.dt.day == 18) |
+                                (select.DateTime.dt.month == 6)]
+            # Check whether there are multiple days, in order to delete
+            # wrong days
+            select_days = select.DateTime.dt.day
+            if len(select_days.unique()) > 1:
+                select = select.loc[select.DateTime.dt.day !=
+                                    22]
+            # Get the number of exercises made in the first day
+            value = len(select)
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_total_exercises_correct_first_lesson(self, skill, id_="simone"):
+
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Get total correct exercise made in first lesson of skill " \
+               f"{skill} "
+        scid = f"aantal_pogingen_correct_in_eerste_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is not in the repeat lesson or in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
+                                                           22])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+            # 05-18 should be excluded, 06-18 not.
+            select = select.loc[~(select.DateTime.dt.day == 18) |
+                                (select.DateTime.dt.month == 6)]
+            # Check whether there are multiple days, in order to delete
+            # wrong days
+            select_days = select.DateTime.dt.day
+            if len(select_days.unique()) > 1:
+                select = select.loc[select.DateTime.dt.day !=
+                                    22]
+            # Get the number of exercises correctly made in the first day
+            value = len(select.loc[select.Correct > 0])
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def calculate_percentage_correct_first_lesson_total(self, skill,
+                                                        id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Calculate percentage correct exercise made in first lesson " \
+               f"of skill {skill} "
+        scid = f"percentage_pogingen_correct_in_eerste_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is not in the repeat lesson or in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
+                                                           22])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+            # 05-18 should be excluded, 06-18 not.
+            select = select.loc[~(select.DateTime.dt.day == 18) |
+                                (select.DateTime.dt.month == 6)]
+            # Check whether there are multiple days, in order to delete
+            # wrong days
+            select_days = select.DateTime.dt.day
+            if len(select_days.unique()) > 1:
+                select = select.loc[select.DateTime.dt.day !=
+                                    22]
+            # Get the number of exercises correctly made in the first day
+            if len(select) > 0:
+                value = len(select.loc[select.Correct > 0]) / len(select)
+                value = round(value, 2)
+            else:
+                value = 999
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_unique_exercises_made_first_lesson(self, skill,
+                                              id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Get total first attempts made in first lesson of skill " \
+               f"{skill} "
+        scid = f"aantal_uniek_gemaakt_in_eerste_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is not in the repeat lesson or in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
+                                                           22])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+            # 05-18 should be excluded, 06-18 not.
+            select = select.loc[~(select.DateTime.dt.day == 18) |
+                                (select.DateTime.dt.month == 6)]
+            # Check whether there are multiple days, in order to delete
+            # wrong days
+            select_days = select.DateTime.dt.day
+            if len(select_days.unique()) > 1:
+                select = select.loc[select.DateTime.dt.day !=
+                                    22]
+            # Get the number of exercises made in the first day
+            value = len(select)
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_unique_exercises_correct_first_lesson(self, skill, id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Get total first attempt exercise made correct in first " \
+               f"lesson of skill {skill} "
+        scid = f"aantal_uniek_correct_in_eerste_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is not in the repeat lesson or in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
+                                                           22])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+            # 05-18 should be excluded, 06-18 not.
+            select = select.loc[~(select.DateTime.dt.day == 18) |
+                                (select.DateTime.dt.month == 6)]
+            # Check whether there are multiple days, in order to delete
+            # wrong days
+            select_days = select.DateTime.dt.day
+            if len(select_days.unique()) > 1:
+                select = select.loc[select.DateTime.dt.day !=
+                                    22]
+            # Get the number of exercises correctly made in the first day
+            value = len(select.loc[select.Correct > 0])
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def calculate_percentage_correct_first_lesson_unique(self, skill,
+                                                        id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Calculate percentage correct first attempt exercise made " \
+               f"in first lesson of skill {skill} "
+        scid = f"percentage_uniek_correct_in_eerste_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is not in the repeat lesson or in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
+                                                           22])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+            # 05-18 should be excluded, 06-18 not.
+            select = select.loc[~(select.DateTime.dt.day == 18) |
+                                (select.DateTime.dt.month == 6)]
+            # Check whether there are multiple days, in order to delete
+            # wrong days
+            select_days = select.DateTime.dt.day
+            if len(select_days.unique()) > 1:
+                select = select.loc[select.DateTime.dt.day !=
+                                    22]
+            # Get the number of exercises correctly made in the first day
+            if len(select) > 0:
+                value = len(select.loc[select.Correct > 0]) / len(select)
+                value = round(value, 2)
+            else:
+                value = 999
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_total_exercises_made_second_lesson(self, skill,
+                                              id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Get total exercise made in second lesson of skill {skill} "
+        scid = f"aantal_pogingen_gemaakt_in_herhalingsles"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            # Get the number of exercises made in the second day
+            value = len(select)
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_total_exercises_correct_second_lesson(self, skill, id_="simone"):
+
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Get total correct exercise made in second lesson of skill " \
+               f"{skill} "
+        scid = f"aantal_pogingen_correct_in_herhalingsles"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            # Get the number of exercises made correct in the second day
+            value = len(select.loc[select.Correct > 0])
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def calculate_percentage_correct_second_lesson_total(self, skill,
+                                                        id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Calculate percentage correct exercise made in second lesson " \
+               f"of skill {skill} "
+        scid = f"percentage_pogingen_correct_in_herhalingsles"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            # Get the percentage of exercises made correct in the second day
+            if len(select) > 0:
+                value = len(select.loc[select.Correct > 0]) / len(select)
+                value = round(value, 2)
+            else:
+                value = 999
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_unique_exercises_made_second_lesson(self, skill,
+                                              id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Get total first attempts made in second lesson of skill " \
+               f"{skill} "
+        scid = f"aantal_uniek_gemaakt_in_herhalingsles"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            # Get the number of exercises made in the second day
+            value = len(select)
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_unique_exercises_correct_second_lesson(self, skill, id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Get total first attempt exercise made correct in second " \
+               f"lesson of skill {skill} "
+        scid = f"aantal_uniek_correct_in_herhalingsles"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            # Get the number of exercises made in the second day
+            value = len(select.loc[select.Correct > 0])
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def calculate_percentage_correct_second_lesson_unique(self, skill,
+                                                        id_="simone"):
+        if id_ != "simone":
+            # Datums used are only correct for data from simone
+            raise NotImplementedError
+        desc = f"Calculate percentage correct first attempt exercise made " \
+               f"in second lesson of skill {skill} "
+        scid = f"percentage_uniek_correct_in_herhalingsles"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.att.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            # Get the number of exercises made in the second day
+            if len(select) > 0:
+                value = len(select.loc[select.Correct > 0]) / len(select)
+                value = round(value, 2)
+            else:
+                value = 999
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def detect_missing_skill_first_lesson(self, skill, id_="simone"):
+        if id_ != "simon":
+            raise NotImplementedError # Still need to implement correctly
+            # for simone
+
+        desc = f"Detect missing data for skill {skill} "
+        scid = f"mist_eerste_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            print(self.long[self.long.UserId == user,
+                f"percentage_uniek_correct_in_herhalingsles_{skill}"])
+            if self.long.loc[self.long.UserId == user,
+                f"percentage_uniek_correct_in_eerste_les_{skill}"] == 0:
+                value = 1
+            else:
+                value = 0
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def detect_missing_skill_repeat_lesson(self, skill, id_="simone"):
+        desc = f"Detect missing data for skill {skill} "
+        scid = f"mist_tweede_les"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            print(self.long[self.long.UserId == user,
+                f"percentage_uniek_correct_in_herhalingsles_{skill}"])
+            if self.long[self.long.UserId == user,
+                f"percentage_uniek_correct_in_herhalingsles_{skill}"] == 0:
+                value = 1
+            else:
+                value = 0
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
 
 class ParameterExtractor:
 
@@ -1123,4 +1584,4 @@ class ParameterExtractor:
 if __name__ == "__main__":
     import pipeline
 
-    pipeline.run_pipeline(estimate_parameters=True)
+    pipeline.run_pipeline(estimate_parameters=False)

@@ -112,6 +112,7 @@ class DataLoader:
         data = self.data.copy()
         if df is not None:
             data = df
+
         att_data = data.drop_duplicates(subset=columns)
         # if copy_df is True:
         #     self.data = data

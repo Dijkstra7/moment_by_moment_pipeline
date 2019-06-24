@@ -16,7 +16,7 @@ from phase_finder import PhaseFinder, pre_ids as pi
 def run_pipeline(ql=True, estimate_parameters=False, id_="simone"):
     data, first_att_data, transfer_data, log_data = load(
         ql, "./res/simone_all_data_all_attempts.xlsx", id_)
-    inspect(data)
+    # inspect(data)
     print(transfer_data.LOID.head())
     print("Processing data")
     saver = Saver(data)
@@ -41,6 +41,33 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone"):
         processor.calculate_gain_per_skill(skill)
     for skill in skills:
         processor.get_last_ability_of_skill(skill)
+    for skill in skills:
+        processor.get_last_ability_first_lesson_of_skill(skill)
+    for skill in skills:
+        processor.get_total_exercises_made_first_lesson(skill, id_)
+    for skill in skills:
+        processor.get_total_exercises_correct_first_lesson(skill, id_)
+    for skill in skills:
+        processor.calculate_percentage_correct_first_lesson_total(skill, id_)
+    for skill in skills:
+        processor.get_unique_exercises_made_first_lesson(skill, id_)
+    for skill in skills:
+        processor.get_unique_exercises_correct_first_lesson(skill, id_)
+    for skill in skills:
+        processor.calculate_percentage_correct_first_lesson_unique(skill, id_)
+    for skill in skills:
+        processor.get_total_exercises_made_second_lesson(skill, id_)
+    for skill in skills:
+        processor.get_total_exercises_correct_second_lesson(skill, id_)
+    for skill in skills:
+        processor.calculate_percentage_correct_second_lesson_total(skill, id_)
+    for skill in skills:
+        processor.get_unique_exercises_made_second_lesson(skill, id_)
+    for skill in skills:
+        processor.get_unique_exercises_correct_second_lesson(skill, id_)
+    for skill in skills:
+        processor.calculate_percentage_correct_second_lesson_unique(skill, id_)
+    
     for skill in skills:
         processor.count_total_exercises_made_per_skill(skill)
     for skill in skills:
@@ -72,7 +99,7 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone"):
     #                                    do_plot=True)
     for skill in skills:
         processor.process_curves(skill, method="exclude_single_strays",
-                                         do_plot=True)
+                                         do_plot=False)
     for skill in skills:
         processor.calculate_type_curve(skill)
     for skill in skills:
@@ -107,6 +134,10 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone"):
     # for skill in skills:
     #     processor.get_shown_path_after_first_lesson(skill)
     #     processor.get_shown_path_after_repeat_lesson(skill)
+    for skill in skills:
+        processor.detect_missing_skill_first_lesson(skill, id_)
+    for skill in skills:
+        processor.detect_missing_skill_repeat_lesson(skill, id_)
 
     save(saver, processor, f_name=id_)
 
@@ -163,6 +194,7 @@ def inspect(data):
     print("Inspecting data")
     inspect_users = []
     inspect_users = [118472]
+    # inspect_users = data.UserId.unique()
     allowed_same_phase_next = {"pre": ["gui", "pre", "ap"],
                                "gui": ["gui", "nap", "ap", "rap", "post",
                                        "pre"],
@@ -192,11 +224,12 @@ def inspect(data):
             if row.phase not in checker[p]:
                 wrong_next_phase = True
             p = row.phase
+            d = row.DateTime.day
             l = row.LOID
         len_pre = len(data.loc[(data.phase == "pre") & (data.UserId == user)])
         len_post = len(data.loc[(data.phase == "post") &
                                 (data.UserId == user)])
-        if len_post != 24 or len_pre != 24:  # or wrong_next_phase is True:
+        if len_post != -1 or len_pre != 24:  # or wrong_next_phase is True:
 
             len_all_pre = len(data.loc[(data.ExerciseId.isin(pi))
                                         & (data.UserId == user)])
@@ -206,20 +239,24 @@ def inspect(data):
                                      # &
                                      # (~data.phase.isin(["pre", "post"]))
                                      ].iterrows():
-                if row.phase != p:
-                    if not p == "":
-                        print(t+1)
-                    p = row.phase
+                if row.phase != p or row.DateTime.day != d:
                     row = row.drop("AbilityAfterAnswer")
                     row = row.drop("Correct")
-                    print(row.values, end=" ")
-                    t = 0
-                else:
-                    t += 1
+                    if row.phase != p:
+                        if not p == "":
+                            print(t+1)
+                        p = row.phase
+                        print(row.values, end=" ")
+                        t = 0
+                    else:
+                        t += 1
+                    if row.DateTime.day != d:
+                        d = row.DateTime.day
+                        print(f"[{d} {row.LOID} '{row.phase}']", end=" ")
             print(t+1)
-        if user in inspect_users:
-            for id_, row in data.loc[(data.UserId == user)].iterrows():
-                print(row.values)
+        # if user in inspect_users:
+        #     for id_, row in data.loc[(data.UserId == user)].iterrows():
+        #         print(row.values)
 
 
 if __name__ == "__main__":
