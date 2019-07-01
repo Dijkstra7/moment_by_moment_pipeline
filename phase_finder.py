@@ -22,6 +22,7 @@ class PhaseFinder:
         self.post_min_id = 0
         self.gui_len = {}
         self.posts_seen = []
+        self.pre_seen = []
 
     def process_gui(self, row):
         if "rap" in self.ap_day:
@@ -62,7 +63,9 @@ class PhaseFinder:
                 self.pre_num += 1
                 if "pre" not in self.ap_day:
                     self.ap_day["pre"] = row.DateTime.day
-                return True
+                if row.ExerciseId not in self.pre_seen:
+                    self.pre_seen.append(row.ExerciseId)
+                    return True
             ### When the pre-ids return in other ids, we have to change how
             ### they are processed, for example as below:
             # if id_ < self.pre_max_id:
@@ -108,15 +111,13 @@ class PhaseFinder:
     def find_phases(self, data: pd.DataFrame, verbose=1):
         data["phase"] = ""
         for user in data.UserId.unique():
-            # if user == 59501:
-            #     print("processing with breakpoint")
-            # print(f"processing {user}")
             user_data = data.loc[data.UserId == user].sort_values("DateTime") \
                 .reset_index()
             self.post_min_id = len(user_data)-len(post_ids)-1
             self.poss_post = user_data.loc[user_data.ExerciseId.isin(post_ids)]
             self.pre_num = 0
             self.posts_seen = []
+            self.pre_seen = []
             if len(self.poss_post > 0):
                 self.ap_day = {"post":
                                    self.poss_post.tail(1).iloc[0].DateTime.day}

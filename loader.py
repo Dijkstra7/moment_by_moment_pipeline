@@ -48,8 +48,9 @@ class DataLoader:
             except xlrd.biffh.XLRDError:
                 data = pd.read_excel(self.file_name)
         data.rename(columns={"LearningObjectiveId": "LOID"}, inplace=True)
-        transfer_data = data.loc[data.LOID == 7579]
-        data = data.loc[data.LOID.isin([7771, 7789, 8025])]
+        data.Correct.loc[data.Correct > 1] = 1
+        transfer_data = data.loc[data.LOID.isin([7579, 8181])]
+        data = data.loc[data.LOID.isin(config.LEARNING_GOALS)]
         self.data = data.copy()
         return data, transfer_data
 

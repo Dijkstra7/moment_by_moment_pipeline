@@ -8,7 +8,8 @@ Several configurations on what data we want to extract.
 GYNZY = False
 use_estimated = False
 parameters_babette = False
-parameters_simone = True
+parameters_simone = False
+parameters_nadine = False
 no_limit = False
 
 import numpy as np
@@ -93,3 +94,9 @@ if parameters_simone is True:
     PARAMETER_T = [0.09, 0.14, 0.19]
     PARAMETER_G = [0.3, 0.08, 0.29]
     PARAMETER_S = [0.1, 0.1, 0.07]
+
+if parameters_nadine is True:
+    PARAMETER_L = [.321, .018, .772]
+    PARAMETER_T = [.195, .073, .148]
+    PARAMETER_G = [.026, .3, .076]
+    PARAMETER_S = [.1, .1, .1]

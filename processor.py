@@ -59,23 +59,6 @@ class Processor:
             self.short.loc[self.short.UserId == user, cid] = value
             self.long.loc[self.long.UserId == user, cid] = value
 
-
-    def count_total_phase_exercises(self, phase, skill):
-        print(f"Tellen aantal gemaakt {phase}-phase voor skill {skill}")
-        translator = {"pre": "Voormeting", "post": "Nameting"}
-        scid = translator[phase]
-        lcid = f"{scid}_{skill}"
-        self.short.loc[self.short.LOID == skill, scid] = np.nan
-        self.long[lcid] = np.nan
-        data = self.data.copy()
-        for user in data['UserId'].unique():
-            select_data = data.loc[(data.phase == phase) &
-                                   (data.UserId == user) &
-                                   (data.LOID == skill)]
-            self.short.loc[(self.short.UserId == user) &
-                           (self.short.LOID == skill), scid] = len(select_data)
-            self.long.loc[self.long.UserId == user, lcid] = len(select_data)
-
     def calculate_gain(self):
         print("Berekenen gain")
         self.short["Gain"] = self.short["Nameting"] - self.short["Voormeting"]
@@ -973,7 +956,7 @@ class Processor:
             kappa.loc[item.UserId, item.ExerciseId] = item.Correct
         kappa.to_excel("output\kappa_file.xlsx", na_rep=999)
 
-    def get_last_ability_first_lesson_of_skill(self, skill):
+    def get_last_ability_first_lesson_of_skill(self, skill, id_="simone"):
         desc = f"Get last ability of first lesson of skill {skill} "
         scid = f"vaardigheid_na_eerste_les"
         lcid = f"{scid}_{skill}"
@@ -981,15 +964,35 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([14, 15, 16, 25, 28, 29]))
+                         &
+                         (data.DateTime.dt.month == 5))
+                        |
+                        ((data.DateTime.dt.day.isin([18, 19, 20]))
+                         &
+                         (data.DateTime.dt.month == 6))
+                )
+            elif id_ == "Nadine":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([12, 13, 14, 26, 27, 28]))
+                         &
+                         (data.DateTime.dt.month == 11))
+                        |
+                        ((data.DateTime.dt.day.isin([10, 11, 12]))
+                         &
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
+            # Select the data that is not in the repeat lesson or in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (~np.isnan(data.AbilityAfterAnswer)) &
-                              (~data.DateTime.dt.day.isin([17, 21, 31]))]
-            select_days = select.DateTime.dt.day
-            if len(select_days.unique()) > 1:
-                select = select.loc[select.DateTime.dt.day !=
-                                    22]
-            print(user, skill, select_days.unique(), end="")
+                              non_repeat &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
             if len(select) > 0:
                 value = select['AbilityAfterAnswer'].values[-1]
             else:
@@ -1001,9 +1004,6 @@ class Processor:
 
     def get_total_exercises_made_first_lesson(self, skill,
                                               id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Get total exercise made in first lesson of skill {skill} "
         scid = f"aantal_pogingen_gemaakt_in_eerste_les"
         lcid = f"{scid}_{skill}"
@@ -1011,22 +1011,35 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([14, 15, 16, 25, 28, 29]))
+                         &
+                         (data.DateTime.dt.month == 5))
+                        |
+                        ((data.DateTime.dt.day.isin([18, 19, 20]))
+                         &
+                         (data.DateTime.dt.month == 6))
+                )
+            elif id_ == "Nadine":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([12, 13, 14, 26, 27, 28]))
+                         &
+                         (data.DateTime.dt.month == 11))
+                        |
+                        ((data.DateTime.dt.day.isin([10, 11, 12]))
+                         &
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
-                                                           22])) &
+                              non_repeat &
                               (~data.phase.isin(["pre", "post"]))
                               ]
-            # 05-18 should be excluded, 06-18 not.
-            select = select.loc[~(select.DateTime.dt.day == 18) |
-                                (select.DateTime.dt.month == 6)]
-            # Check whether there are multiple days, in order to delete
-            # wrong days
-            select_days = select.DateTime.dt.day
-            if len(select_days.unique()) > 1:
-                select = select.loc[select.DateTime.dt.day !=
-                                    22]
+
             # Get the number of exercises made in the first day
             value = len(select)
 
@@ -1035,10 +1048,6 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def get_total_exercises_correct_first_lesson(self, skill, id_="simone"):
-
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Get total correct exercise made in first lesson of skill " \
                f"{skill} "
         scid = f"aantal_pogingen_correct_in_eerste_les"
@@ -1047,22 +1056,35 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([14, 15, 16, 25, 28, 29]))
+                         &
+                         (data.DateTime.dt.month == 5))
+                        |
+                        ((data.DateTime.dt.day.isin([18, 19, 20]))
+                         &
+                         (data.DateTime.dt.month == 6))
+                )
+            elif id_ == "Nadine":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([12, 13, 14, 26, 27, 28]))
+                         &
+                         (data.DateTime.dt.month == 11))
+                        |
+                        ((data.DateTime.dt.day.isin([10, 11, 12]))
+                         &
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
-                                                           22])) &
+                              non_repeat &
                               (~data.phase.isin(["pre", "post"]))
                               ]
-            # 05-18 should be excluded, 06-18 not.
-            select = select.loc[~(select.DateTime.dt.day == 18) |
-                                (select.DateTime.dt.month == 6)]
-            # Check whether there are multiple days, in order to delete
-            # wrong days
-            select_days = select.DateTime.dt.day
-            if len(select_days.unique()) > 1:
-                select = select.loc[select.DateTime.dt.day !=
-                                    22]
+
             # Get the number of exercises correctly made in the first day
             value = len(select.loc[select.Correct > 0])
 
@@ -1072,9 +1094,6 @@ class Processor:
 
     def calculate_percentage_correct_first_lesson_total(self, skill,
                                                         id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Calculate percentage correct exercise made in first lesson " \
                f"of skill {skill} "
         scid = f"percentage_pogingen_correct_in_eerste_les"
@@ -1083,22 +1102,35 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([14, 15, 16, 25, 28, 29]))
+                         &
+                         (data.DateTime.dt.month == 5))
+                        |
+                        ((data.DateTime.dt.day.isin([18, 19, 20]))
+                         &
+                         (data.DateTime.dt.month == 6))
+                )
+            elif id_ == "Nadine":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([12, 13, 14, 26, 27, 28]))
+                         &
+                         (data.DateTime.dt.month == 11))
+                        |
+                        ((data.DateTime.dt.day.isin([10, 11, 12]))
+                         &
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
-                                                           22])) &
+                              non_repeat &
                               (~data.phase.isin(["pre", "post"]))
                               ]
-            # 05-18 should be excluded, 06-18 not.
-            select = select.loc[~(select.DateTime.dt.day == 18) |
-                                (select.DateTime.dt.month == 6)]
-            # Check whether there are multiple days, in order to delete
-            # wrong days
-            select_days = select.DateTime.dt.day
-            if len(select_days.unique()) > 1:
-                select = select.loc[select.DateTime.dt.day !=
-                                    22]
+
             # Get the number of exercises correctly made in the first day
             if len(select) > 0:
                 value = len(select.loc[select.Correct > 0]) / len(select)
@@ -1112,9 +1144,6 @@ class Processor:
 
     def get_unique_exercises_made_first_lesson(self, skill,
                                               id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Get total first attempts made in first lesson of skill " \
                f"{skill} "
         scid = f"aantal_uniek_gemaakt_in_eerste_les"
@@ -1123,22 +1152,35 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.att.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([14, 15, 16, 25, 28, 29]))
+                         &
+                         (data.DateTime.dt.month == 5))
+                        |
+                        ((data.DateTime.dt.day.isin([18, 19, 20]))
+                         &
+                         (data.DateTime.dt.month == 6))
+                )
+            elif id_ == "Nadine":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([12, 13, 14, 26, 27, 28]))
+                         &
+                         (data.DateTime.dt.month == 11))
+                        |
+                        ((data.DateTime.dt.day.isin([10, 11, 12]))
+                         &
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
-                                                           22])) &
+                              non_repeat &
                               (~data.phase.isin(["pre", "post"]))
                               ]
-            # 05-18 should be excluded, 06-18 not.
-            select = select.loc[~(select.DateTime.dt.day == 18) |
-                                (select.DateTime.dt.month == 6)]
-            # Check whether there are multiple days, in order to delete
-            # wrong days
-            select_days = select.DateTime.dt.day
-            if len(select_days.unique()) > 1:
-                select = select.loc[select.DateTime.dt.day !=
-                                    22]
+
             # Get the number of exercises made in the first day
             value = len(select)
 
@@ -1147,9 +1189,6 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def get_unique_exercises_correct_first_lesson(self, skill, id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Get total first attempt exercise made correct in first " \
                f"lesson of skill {skill} "
         scid = f"aantal_uniek_correct_in_eerste_les"
@@ -1158,22 +1197,35 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.att.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([14, 15, 16, 25, 28, 29]))
+                         &
+                         (data.DateTime.dt.month == 5))
+                        |
+                        ((data.DateTime.dt.day.isin([18, 19, 20]))
+                         &
+                         (data.DateTime.dt.month == 6))
+                )
+            elif id_ == "Nadine":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([12, 13, 14, 26, 27, 28]))
+                         &
+                         (data.DateTime.dt.month == 11))
+                        |
+                        ((data.DateTime.dt.day.isin([10, 11, 12]))
+                         &
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
-                                                           22])) &
+                              non_repeat &
                               (~data.phase.isin(["pre", "post"]))
                               ]
-            # 05-18 should be excluded, 06-18 not.
-            select = select.loc[~(select.DateTime.dt.day == 18) |
-                                (select.DateTime.dt.month == 6)]
-            # Check whether there are multiple days, in order to delete
-            # wrong days
-            select_days = select.DateTime.dt.day
-            if len(select_days.unique()) > 1:
-                select = select.loc[select.DateTime.dt.day !=
-                                    22]
+
             # Get the number of exercises correctly made in the first day
             value = len(select.loc[select.Correct > 0])
 
@@ -1183,9 +1235,6 @@ class Processor:
 
     def calculate_percentage_correct_first_lesson_unique(self, skill,
                                                         id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Calculate percentage correct first attempt exercise made " \
                f"in first lesson of skill {skill} "
         scid = f"percentage_uniek_correct_in_eerste_les"
@@ -1194,22 +1243,35 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.att.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([14, 15, 16, 25, 28, 29]))
+                         &
+                         (data.DateTime.dt.month == 5))
+                        |
+                        ((data.DateTime.dt.day.isin([18, 19, 20]))
+                         &
+                         (data.DateTime.dt.month == 6))
+                )
+            elif id_ == "Nadine":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([12, 13, 14, 26, 27, 28]))
+                         &
+                         (data.DateTime.dt.month == 11))
+                        |
+                        ((data.DateTime.dt.day.isin([10, 11, 12]))
+                         &
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (~data.DateTime.dt.day.isin([17, 21, 31, 1,
-                                                           22])) &
+                              non_repeat &
                               (~data.phase.isin(["pre", "post"]))
                               ]
-            # 05-18 should be excluded, 06-18 not.
-            select = select.loc[~(select.DateTime.dt.day == 18) |
-                                (select.DateTime.dt.month == 6)]
-            # Check whether there are multiple days, in order to delete
-            # wrong days
-            select_days = select.DateTime.dt.day
-            if len(select_days.unique()) > 1:
-                select = select.loc[select.DateTime.dt.day !=
-                                    22]
+
             # Get the number of exercises correctly made in the first day
             if len(select) > 0:
                 value = len(select.loc[select.Correct > 0]) / len(select)
@@ -1223,9 +1285,6 @@ class Processor:
 
     def get_total_exercises_made_second_lesson(self, skill,
                                               id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Get total exercise made in second lesson of skill {skill} "
         scid = f"aantal_pogingen_gemaakt_in_herhalingsles"
         lcid = f"{scid}_{skill}"
@@ -1233,10 +1292,22 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              repeat_days &
                               (~data.phase.isin(["pre", "post"]))
                               ]
 
@@ -1248,10 +1319,6 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def get_total_exercises_correct_second_lesson(self, skill, id_="simone"):
-
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Get total correct exercise made in second lesson of skill " \
                f"{skill} "
         scid = f"aantal_pogingen_correct_in_herhalingsles"
@@ -1260,10 +1327,22 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              repeat_days &
                               (~data.phase.isin(["pre", "post"]))
                               ]
 
@@ -1276,9 +1355,6 @@ class Processor:
 
     def calculate_percentage_correct_second_lesson_total(self, skill,
                                                         id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Calculate percentage correct exercise made in second lesson " \
                f"of skill {skill} "
         scid = f"percentage_pogingen_correct_in_herhalingsles"
@@ -1287,11 +1363,22 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
-
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              repeat_days &
                               (~data.phase.isin(["pre", "post"]))
                               ]
 
@@ -1306,11 +1393,7 @@ class Processor:
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value
 
-    def get_unique_exercises_made_second_lesson(self, skill,
-                                              id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
+    def get_unique_exercises_made_second_lesson(self, skill, id_="simone"):
         desc = f"Get total first attempts made in second lesson of skill " \
                f"{skill} "
         scid = f"aantal_uniek_gemaakt_in_herhalingsles"
@@ -1319,10 +1402,22 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.att.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              repeat_days &
                               (~data.phase.isin(["pre", "post"]))
                               ]
 
@@ -1334,9 +1429,6 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def get_unique_exercises_correct_second_lesson(self, skill, id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Get total first attempt exercise made correct in second " \
                f"lesson of skill {skill} "
         scid = f"aantal_uniek_correct_in_herhalingsles"
@@ -1345,10 +1437,22 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.att.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              repeat_days &
                               (~data.phase.isin(["pre", "post"]))
                               ]
 
@@ -1361,9 +1465,6 @@ class Processor:
 
     def calculate_percentage_correct_second_lesson_unique(self, skill,
                                                         id_="simone"):
-        if id_ != "simone":
-            # Datums used are only correct for data from simone
-            raise NotImplementedError
         desc = f"Calculate percentage correct first attempt exercise made " \
                f"in second lesson of skill {skill} "
         scid = f"percentage_uniek_correct_in_herhalingsles"
@@ -1372,11 +1473,22 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.att.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
-
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill) &
-                              (data.DateTime.dt.day.isin([17, 21, 31])) &
+                              repeat_days &
                               (~data.phase.isin(["pre", "post"]))
                               ]
 
@@ -1392,20 +1504,43 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def detect_missing_skill_first_lesson(self, skill, id_="simone"):
-        if id_ != "simon":
-            raise NotImplementedError # Still need to implement correctly
-            # for simone
-
         desc = f"Detect missing data for skill {skill} "
         scid = f"mist_eerste_les"
         lcid = f"{scid}_{skill}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
+        data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
-            print(self.long[self.long.UserId == user,
-                f"percentage_uniek_correct_in_herhalingsles_{skill}"])
-            if self.long.loc[self.long.UserId == user,
-                f"percentage_uniek_correct_in_eerste_les_{skill}"] == 0:
+            if id_ == "Simone":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([14, 15, 16, 25, 28, 29]))
+                         &
+                         (data.DateTime.dt.month == 5))
+                        |
+                        ((data.DateTime.dt.day.isin([18, 19, 20]))
+                         &
+                         (data.DateTime.dt.month == 6))
+                )
+            elif id_ == "Nadine":
+                non_repeat = (
+                        ((data.DateTime.dt.day.isin([12, 13, 14, 26, 27, 28]))
+                         &
+                         (data.DateTime.dt.month == 11))
+                        |
+                        ((data.DateTime.dt.day.isin([10, 11, 12]))
+                         &
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
+            # Select the data that is not in the repeat lesson or in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              non_repeat &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            if len(select) == 0:
                 value = 1
             else:
                 value = 0
@@ -1419,11 +1554,28 @@ class Processor:
         lcid = f"{scid}_{skill}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
+        data = self.data.copy()
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
-            print(self.long[self.long.UserId == user,
-                f"percentage_uniek_correct_in_herhalingsles_{skill}"])
-            if self.long[self.long.UserId == user,
-                f"percentage_uniek_correct_in_herhalingsles_{skill}"] == 0:
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            else:
+                raise NotImplementedError
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              repeat_days &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            if len(select) == 0:
                 value = 1
             else:
                 value = 0
