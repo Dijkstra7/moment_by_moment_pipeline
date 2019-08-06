@@ -143,7 +143,7 @@ class DataLoader:
             self.data = df
         for key in filters:
             self.data = self.data.loc[~self.data[key].isin(
-                filters[key])].reset_index(drop=True)
+                filters[key])]
         # self.data.loc[self.data.Correct > 1, "Correct"] = 1
         return self.data.copy()
 

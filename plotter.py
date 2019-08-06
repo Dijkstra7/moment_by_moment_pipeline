@@ -10,7 +10,8 @@ class Plotter:
                            "nap": 'silver',
                            "ap": 'gold',
                            "rap": 'mediumblue',
-                           "post": 'olivedrab'}
+                           "post": 'olivedrab',
+                           "": "gold"}
         if not os.path.exists(self.dir_):
             os.mkdir(self.dir_)
 
@@ -20,9 +21,9 @@ class Plotter:
         if isinstance(y_data[0], list) is False:
             y_data = [y_data]
         if x_data is None:
-            x_data = range(1, max([len(y) for y in y_data]) + 1)
+            x_data = range(1, max([len(y) for y in y_data]) + 4)
         for j, y in enumerate(y_data):
-            plt.plot(x_data[:len(y)], y, color=["cyan", "red"][j])
+            plt.plot(x_data[:len(y)], y, color=["cyan", "red", "black"][j])
         if phase_data is not None:
             for j in range(len(phase_data)):
                 phase = phase_data[j]

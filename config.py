@@ -5,11 +5,12 @@ Config
 
 Several configurations on what data we want to extract.
 """
-GYNZY = False
+GYNZY = True
 use_estimated = False
 parameters_babette = False
 parameters_simone = False
 parameters_nadine = False
+parameters_kb = True
 no_limit = False
 
 import numpy as np
@@ -100,3 +101,10 @@ if parameters_nadine is True:
     PARAMETER_T = [.195, .073, .148]
     PARAMETER_G = [.026, .3, .076]
     PARAMETER_S = [.1, .1, .1]
+
+if parameters_kb is True:
+    PARAMETER_L = [.201, .591, .056]
+    PARAMETER_T = [.083, .071, .064]
+    PARAMETER_G = [.3, .3, .3]
+    PARAMETER_S = [.1, .1, .001]
+

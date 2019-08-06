@@ -32,7 +32,7 @@ class Processor:
         self.p_peaks = {}
         self.plotter = Plotter()
         self.phase_dict = {"pre": 0, "gui": 1, "nap": 2, "ap": 3, "rap": 4,
-                           "post": 5}
+                           "post": 5, "": 999}
         self.phase_curves = {}
         self.phase_ids = {}
         self.logs = logs
@@ -451,7 +451,7 @@ class Processor:
                 )
 
     def process_curves(self, skill, do_plot=False, method="biggest",
-                       folder="simone"):
+                       folder="simone", add_elo=False):
         desc = f"Processing curves for skill {skill}"
         data = self.att.copy()
         for user in tqdm(data['UserId'].unique(), desc=desc):
@@ -503,9 +503,12 @@ class Processor:
                 self.phase_curves[f"{user}_{skill}"] = 999
                 self.phase_ids[f"{user}_{skill}"] = 999
             if do_plot is True:
+                to_plot = [self.curves[f"{user}_{skill}"],
+                           select.Correct.values * .05 - 1]
+                if add_elo is True:
+                    to_plot.append(select.AbilityAfterAnswer * .01 -.5)
                 self.plotter.plot_save(
-                    [self.curves[f"{user}_{skill}"],
-                     select.Correct.values * .05 - 1],
+                    to_plot,
                     f_name=
                     # f"{curve.get_type(curve.get_curve(select))}_"
                     f"{folder}/{user}_{skill}", phase_data=select.phase.values
@@ -1583,6 +1586,67 @@ class Processor:
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value
 
+    def calculate_average_effort(self, skill, id_):
+        """
+        Calculate the average of the effort made by the student by adding
+        the effort and dividing it by the total exercises made.
+
+        Parameters
+        ----------
+        skill
+        id_
+
+        Returns
+        -------
+
+        """
+        desc = f"Caluclate average effort for skill {skill} "
+        scid = f"average_effort"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill)]
+            if len(select) == 0:
+                value = 999
+            else:
+                value = select.Effort.sum()/len(select)
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def calculate_total_effort(self, skill, id_):
+        """
+        Calculate the average of the effort made by the student by adding
+        the effort and dividing it by the total exercises made.
+
+        Parameters
+        ----------
+        skill
+        id_
+
+        Returns
+        -------
+
+        """
+        desc = f"Caluclate total effort for skill {skill} "
+        scid = f"total_effort"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill)]
+            if len(select) == 0:
+                value = 999
+            else:
+                value = select.Effort.sum()
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
 
 class ParameterExtractor:
 

@@ -126,7 +126,7 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
         if not os.path.exists(f'./plots/{id_}'):
             os.mkdir(f'./plots/{id_}')
         processor.process_curves(skill, method="exclude_single_strays",
-                                 do_plot=False, folder=id_)
+                                 do_plot=True, folder=id_, add_elo=True)
     for skill in skills:
         processor.calculate_type_curve(skill)
     for skill in skills:
@@ -195,6 +195,12 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
             processor.detect_missing_skill_repeat_lesson(skill, id_)
     except NotImplementedError:
         pass
+
+    if id_ in ["kb"]:
+        for skill in skills:
+            processor.calculate_average_effort(skill, id_)
+        for skill in skills:
+            processor.calculate_total_effort(skill, id_)
     # for skill in skills:
     #     for moment in [1, 2, 3]:
     #         processor.get_setgoal(skill, moment)
@@ -214,17 +220,22 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
         print("Organizing data")
         # data["DateTime"] = loader.combine_date_time(data["SubmitDate"],
         #                                             data["Time"])
+
         data = data[['DateTime', 'UserId', 'ExerciseId',
-                     'LOID', 'Correct', 'AbilityAfterAnswer']]
+                     'LOID', 'Correct', 'AbilityAfterAnswer', 'Effort']]
         print("Preprocessing data")
-        unfiltered = loader.sort_data_by(data, "DateTime")
+        if not id_ in ["kb"]:
+            unfiltered = loader.sort_data_by(data, "DateTime")
+        else:
+            unfiltered = data
         transfer_data = loader.first_attempts_only(['UserId', 'ExerciseId',
                                                     'LOID'],
                                                    df=transfer_data,
                                                    copy_df=False)
         data = loader.filter(filters, df=unfiltered)
-        if id_ in ["karlijn_en_babette"]:
-            data = PhaseFinder().find_gynzy_phases(data)
+        print(data.head())
+        if id_ in ["karlijn_en_babette", "kb"]:
+            data = PhaseFinder().find_gynzy_phases(data, id_)
         else:
             data = PhaseFinder().find_phases(data)
             data = correct(data)
@@ -323,7 +334,7 @@ def inspect(data):
 
 
 if __name__ == "__main__":
-    quick_loading = True
+    quick_loading = False
     estimate_parameters = False
-    run_pipeline(quick_loading, estimate_parameters, id_="Nadine",
-                 file_name="./res/Nadine_non_split.xlsx")
+    run_pipeline(quick_loading, estimate_parameters, id_="kb",
+                 file_name="./res/data_kb.xlsx")
