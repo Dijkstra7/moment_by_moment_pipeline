@@ -15,7 +15,7 @@ class Saver:
         self.data_dir = data_dir
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
-        print(df.LOID.unique)
+        print(df.LOID.unique())
         self.skills = df['LOID'].drop_duplicates().values
         self.short = self.set_up_short(df)
         self.long = self.set_up_long(df)

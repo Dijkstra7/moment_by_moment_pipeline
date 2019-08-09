@@ -8,6 +8,8 @@ Set the phase next to the data.
 
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
+
 from config import pre_ids, post_ids, nap_ids, gui_ids, gynzy_pre_ids, \
     gynzy_post_ids, LEARNING_GOALS
 all_ids = pre_ids + post_ids + nap_ids + gui_ids
@@ -253,8 +255,10 @@ class PhaseFinder:
         Pandas.Dataframe
             the data with added phases.
         """
-        # Set up annoying id's that have to be discarded.
+        # Set up list of id's that slip through the detection of non-pre and
+        # post ids
         exclude_post_ids = []
+        exclude_pre_ids = []
         if id_ in ["karlijn_en_babbete"]:
             exclude_post_ids = [13862, 5471, 5472, 13599, 13634, 13655, 13668,
                                 13844, 14109, 14208, 14215, 14065, 14556,
@@ -271,19 +275,33 @@ class PhaseFinder:
                                 16072, 16085, 16764, 16765, ]
             for i in range(16702, 16726):
                 exclude_post_ids.append(i)
+        elif id_ == "kb_all":
+            exclude_pre_ids = [31686, 32189, 32145, 32279, 31605, 32067,
+                               32027, 7842, 7650, 7645, 9053, 9062, 9318,
+                               9411, 9421]
+            exclude_post_ids = [33662, 14313, 10479, 16727, 16726, 16439,
+                                16437, 16407, 16282, 17596, 17602, 17646,
+                                14089, ]
+
+        # Set up dictionary to match experiment dates to days
+        experiment_day = {"day0": ['03-29', '04-05', '05-10', '05-29'],
+                          "day1": ['04-01', '04-08', '05-13', '06-03'],
+                          "day2": ['04-02', '04-09', '05-14', '06-04'],
+                          "day3": ['04-03', '04-10', '05-15', '06-05'],
+                          "day4": ['04-04', '04-11', '05-16', '06-06'],
+                          "day5": ['04-05', '04-12', '05-17', '06-07']}
+
         # Create phase column
         data["phase"] = ""
         print(data.head())
         # Process every user
-        for user in data.UserId.unique():
+        for user in tqdm(data.UserId.unique()):
             print(f"processing {user}")
             # Select user data
             user_data = data.loc[data.UserId == user]
-            print(f"id: {id_}")
-            print(user_data.head())
-            if id_ not in ["kb"]:
+            # print(f"id: {id_}")
+            if id_ not in ["kb", "kb_all"]:
                 user_data = user_data.sort_values("DateTime").reset_index()
-            print(user_data.head())
 
             # Set up what days are available for processing
             num_pre = 0
@@ -308,45 +326,114 @@ class PhaseFinder:
                 first_day = user_data.iloc[0].DateTime[8:10]
                 last_day = user_data.iloc[-1].DateTime[8:10]
 
+            if id_ == "kb_all":
+                pre_days = ['29', '05', '10', '29']
+                post_days = ['05', '12', '17', '07']
+                first_day = user_data.iloc[0].DateTime[8:10]
+                last_day = user_data.iloc[-1].DateTime[8:10]
+                last_month = user_data.iloc[-1].DateTime[5:7]
+
+                if last_day in ['04', '05']:
+                    pre_days = ['29']
+
+                if first_day == '08':
+                    pre_days = ['08']
+
+                if last_month == '06':
+                    post_days = ['07']
+                    pre_days = ['29']
+
+                if last_month == '05':
+                    post_days = ['17']
+                    pre_days = ['10']
+
+                if last_month == '04':
+                    post_days = ['05', '12']
+                    if last_day == '12':
+                        pre_days = ['05']
+                        post_days = ['12']
+                    if last_day == '05':
+                        pre_days = ['29']
+                        post_days = ['05']
+
             # Process the data
             for index, row in user_data.iterrows():
+
                 if row.ExerciseId in gynzy_pre_ids and \
-                        row.DateTime[8:10] in pre_days:
+                        row.DateTime[8:10] in pre_days and index \
+                        not in exclude_pre_ids:
                     data.loc[index, 'phase'] = "pre"
                     num_pre += 1
                 if row.ExerciseId in gynzy_post_ids and \
                         row.DateTime[8:10] in post_days and \
                         index not in exclude_post_ids:
                     data.loc[index, 'phase'] = "post"
-            #
-            # if id_ in ["kb"]:
-            #     for _, row in user_data.iterrows():
-            #         if row.ExerciseId in gynzy_pre_ids and \
-            #                 row.DateTime.day in pre_days:
-            #             data.loc[row['index'], 'phase'] = "pre"
-            #             num_pre += 1
-            #         if row.ExerciseId in gynzy_post_ids and \
-            #                 row.DateTime.day in post_days and \
-            #                 row['index'] not in exclude_post_ids:
-            #             data.loc[row['index'], 'phase'] = "post"
 
-            if id_ not in ["kb"]:
-                user_data = data.loc[data.UserId == user]\
+                if int(row.DateTime[11:13]) >= 15:
+                    data.loc[index, "phase"] = "out of school"
+            if id_ not in ["kb", "kb_all"]:
+                user_data = data.loc[data.UserId == user] \
                     .sort_values("DateTime").reset_index()
-            post_len = len(user_data.loc[user_data.phase == 'post'].values)
-            pre_len = len(user_data.loc[user_data.phase == 'pre'].values)
+            post_data = data.loc[(data.phase == 'post') &
+                                 (data.UserId == user)]
+            pre_data = data.loc[(data.phase == 'pre') &
+                                 (data.UserId == user)]
 
-            print(f"total pre ids: {pre_len}; total post ids: {post_len}; \n"
+            post_times = len(post_data.DateTime.unique())
+            pre_times = len(pre_data.DateTime.unique())
+
+            print(f"total pre ids: {len(pre_data)}; "
+                  f"total post ids: {len(post_data)}; \n"
                   f"first day: {first_day}; last day: {last_day}")
-            if pre_len not in [0, 24] or post_len not in [0, 24]:
-                original_max_columns = pd.options.display.max_columns
-                original_max_colwidth = pd.options.display.max_colwidth
-                pd.options.display.max_columns = 30
-                pd.options.display.max_colwidth = 300
-                pd.options.display.width = 120
-                print(user_data.head(len(user_data)))
-                pd.options.display.max_columns = original_max_columns
-                pd.options.display.max_colwidth = original_max_colwidth
+
+            if post_times > 1 or pre_times > 1:
+                for time in post_data.DateTime.unique():
+                    print(time, ':',
+                          len(post_data.loc[post_data.DateTime == time]))
+                    if len(post_data.loc[post_data.DateTime == time]) == 24:
+                        data.loc[(data.UserId == user) &
+                                 (data.DateTime != time) &
+                                 (data.phase == 'post'), 'phase'] = ""
+                        break
+
+                for time in pre_data.DateTime.unique():
+                    print(time, ':',
+                          len(pre_data.loc[pre_data.DateTime == time]))
+                    if len(pre_data.loc[pre_data.DateTime == time]) == 24:
+                        data.loc[(data.UserId == user) &
+                                 (data.DateTime != time) &
+                                 (data.phase == 'pre'), 'phase'] = ""
+                        break
+
+                printing = data.loc[(data.UserId == user) &
+                                    (data.phase.isin(["pre", "post"]))].head(
+                    len(user_data))
+                if len(printing.DateTime.unique()) > len(
+                        printing.phase.unique()):
+                    print(printing)
+                    print("post and pre adjusted")
+            for index, row in user_data.iterrows():
+                if data.loc[index, 'phase'] == "":
+                    # Set phase to indicate the day of training
+                    for key in experiment_day.keys():
+                        if row.DateTime[5:10] in experiment_day[key]:
+                            data.loc[index, 'phase'] = key
+                            # check for ambiguity on april 5th
+                            if first_day == '05':
+                                if data.loc[index, 'phase'] == "day5":
+                                    data.loc[index, 'phase'] = key
+
+            original_max_columns = pd.options.display.max_columns
+            original_max_colwidth = pd.options.display.max_colwidth
+            pd.options.display.max_columns = 30
+            # pd.options.display.max_rows = 400
+
+            pd.options.display.max_colwidth = 300
+            pd.options.display.width = 120
+            print(data.loc[data.UserId == user])
+
+            pd.options.display.max_columns = original_max_columns
+            pd.options.display.max_colwidth = original_max_colwidth
         return data
 
 

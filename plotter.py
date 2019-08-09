@@ -11,7 +11,14 @@ class Plotter:
                            "ap": 'gold',
                            "rap": 'mediumblue',
                            "post": 'olivedrab',
-                           "": "gold"}
+                           "day0": 'lightgray',
+                           "day1": 'xkcd:bright yellow',
+                           "day2": 'xkcd:sunshine yellow',
+                           "day3": 'xkcd:canary yellow',
+                           "day4": 'mediumblue',
+                           "day5": "lightgray",
+                           "": "lightgray",
+                           "out of school": "red"}
         if not os.path.exists(self.dir_):
             os.mkdir(self.dir_)
 

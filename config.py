@@ -11,6 +11,7 @@ parameters_babette = False
 parameters_simone = False
 parameters_nadine = False
 parameters_kb = True
+parameters_kb_experiment = False
 no_limit = False
 
 import numpy as np
@@ -108,3 +109,8 @@ if parameters_kb is True:
     PARAMETER_G = [.3, .3, .3]
     PARAMETER_S = [.1, .1, .001]
 
+if parameters_kb_experiment is True:
+    PARAMETER_L = [.146, .37, .001]
+    PARAMETER_T = [.049, .039, .043]
+    PARAMETER_G = [.3, .3, .3]
+    PARAMETER_S = [.1, .1, .001]

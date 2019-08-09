@@ -16,7 +16,7 @@ from phase_finder import PhaseFinder, pre_ids as pi
 
 
 def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
-                 file_name=None):
+                 file_name=None, skipping=[]):
     """
     Main program that runs the pipeline processing all data.
 
@@ -37,6 +37,8 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
         The identifier for the source
     file_name: str
         Path to the file.
+    skipping: list of str
+        a list of grouped options in the pipeline that will be skipped.
 
     Returns
     -------
@@ -51,11 +53,12 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
     data, first_att_data, transfer_data, log_data = load(
         ql, file_name, id_)
     skills = data.LOID.unique()
-
+    # print(data[['UserId', 'ExerciseId', 'LOID', 'phase']].loc[
+    #           data.UserId == 2369506].tail(60))
     # Inspect the data to determine whether preprocessing was performed correct
     # inspect(data)
     # return None
-    print(transfer_data.LOID.head())
+    # print(transfer_data.LOID.head())
     print("Processing data")
 
     # Initiate creation of save file
@@ -71,136 +74,144 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
         processor.add_skill_to_long_file(skill)
 
     # Pre/post stuff
-    for phase in ["pre", "post"]:
-        processor.count_total_correct_phase_exercises(phase)
-    processor.calculate_gain()
+    if "pre/post" not in skipping:
+        for phase in ["pre", "post"]:
+            processor.count_total_correct_phase_exercises(phase)
+        processor.calculate_gain()
 
-    processor.get_transfer_score(transfer_data)
+        processor.get_transfer_score(transfer_data)
 
     # Total exercises stuff
-    processor.count_total_exercises_made()
-    processor.count_total_exercises_correct()
-    processor.count_total_exercises_made_att()
-    processor.count_total_exercises_correct_att()
+    if "total exercises" not in skipping:
+        processor.count_total_exercises_made()
+        processor.count_total_exercises_correct()
+        processor.count_total_exercises_made_att()
+        processor.count_total_exercises_correct_att()
 
     # Per skill stuff
-    for phase in ["pre", "post"]:
+    if "per skill" not in skipping:
+        for phase in ["pre", "post"]:
+            for skill in skills:
+                processor.skill_count_total_correct_phase_exercise(skill, phase)
         for skill in skills:
-            processor.skill_count_total_correct_phase_exercise(skill, phase)
-    for skill in skills:
-        processor.calculate_gain_per_skill(skill)
-    for skill in skills:
-        processor.get_last_ability_of_skill(skill)
-    for skill in skills:
-        processor.count_total_exercises_made_per_skill(skill)
-    for skill in skills:
-        processor.count_total_exercises_correct_per_skill(skill)
-    for skill in skills:
-        processor.calculate_percentage_correct_per_skill(skill)
-    for skill in skills:
-        processor.count_total_exercises_made_att_per_skill(skill)
-    for skill in skills:
-        processor.count_total_exercises_correct_att_per_skill(skill)
-    for skill in skills:
-        processor.calculate_percentage_correct_att_per_skill(skill)
-    for skill in skills:
-        processor.count_total_adaptive_per_skill(skill)
-    for skill in skills:
-        processor.count_correct_adaptive_per_skill(skill)
-    for skill in skills:
-        processor.calculate_percentage_correct_adaptive_per_skill(skill)
-    for skill in skills:
-        processor.count_total_adaptive_att_per_skill(skill)
-    for skill in skills:
-        processor.count_correct_adaptive_att_per_skill(skill)
-    for skill in skills:
-        processor.calculate_percentage_correct_adaptive_att_per_skill(skill)
+            processor.calculate_gain_per_skill(skill)
+        for skill in skills:
+            processor.get_last_ability_of_skill(skill)
+        for skill in skills:
+            processor.count_total_exercises_made_per_skill(skill)
+        for skill in skills:
+            processor.count_total_exercises_correct_per_skill(skill)
+        for skill in skills:
+            processor.calculate_percentage_correct_per_skill(skill)
+        for skill in skills:
+            processor.count_total_exercises_made_att_per_skill(skill)
+        for skill in skills:
+            processor.count_total_exercises_correct_att_per_skill(skill)
+        for skill in skills:
+            processor.calculate_percentage_correct_att_per_skill(skill)
+        for skill in skills:
+            processor.count_total_adaptive_per_skill(skill)
+        for skill in skills:
+            processor.count_correct_adaptive_per_skill(skill)
+        for skill in skills:
+            processor.calculate_percentage_correct_adaptive_per_skill(skill)
+        for skill in skills:
+            processor.count_total_adaptive_att_per_skill(skill)
+        for skill in skills:
+            processor.count_correct_adaptive_att_per_skill(skill)
+        for skill in skills:
+            processor.calculate_percentage_correct_adaptive_att_per_skill(skill)
 
     # Curve stuff
-    # # FOR TESTING ONLY
-    # # for skill in skills:
-    # #     processor.process_wrong_curves(skill,
-    # #         method="exclude_single_strays", do_plot=True)
-    # # FOR TESTING ONLY
-    for skill in skills:
-        if not os.path.exists(f'./plots/{id_}'):
-            os.mkdir(f'./plots/{id_}')
-        processor.process_curves(skill, method="exclude_single_strays",
-                                 do_plot=True, folder=id_, add_elo=True)
-    for skill in skills:
-        processor.calculate_type_curve(skill)
-    for skill in skills:
-        processor.get_phase_of_last_peak(skill)
-    for skill in skills:
-        processor.get_phase_of_last_peak(skill)
-    for phase in phases:
+    if "curves" not in skipping:
+        print("processing curve data")
+        # # FOR TESTING ONLY
+        # # for skill in skills:
+        # #     processor.process_wrong_curves(skill,
+        # #         method="exclude_single_strays", do_plot=True)
+        # # FOR TESTING ONLY
         for skill in skills:
-            processor.count_first_attempts_per_skill(phase, skill)
-    for skill in skills:
-        processor.calculate_general_spikiness(skill)
-    for skill in skills:
-        processor.calculate_phase_spikiness(skill, phases)
-    for skill in skills:
-        processor.get_total_amount_of_peaks(skill)
-    for phase in phases:
+            if not os.path.exists(f'./plots/{id_}'):
+                os.mkdir(f'./plots/{id_}')
+            processor.process_curves(skill, method="exclude_single_strays",
+                                     do_plot=True, folder=id_, add_elo=True)
         for skill in skills:
-            processor.get_peaks_per_skill_per_phase(skill, phase)
-    for skill in skills:
-        processor.get_total_amount_of_trans_peaks(skill)
-    for phase in phases:
+            processor.calculate_type_curve(skill)
         for skill in skills:
-            processor.get_trans_peaks_per_skill_per_phase(skill, phase)
+            processor.get_phase_of_last_peak(skill)
+        for skill in skills:
+            processor.get_phase_of_last_peak(skill)
+        for phase in phases:
+            for skill in skills:
+                processor.count_first_attempts_per_skill(phase, skill)
+        for skill in skills:
+            processor.calculate_general_spikiness(skill)
+        for skill in skills:
+            processor.calculate_phase_spikiness(skill, phases)
+        for skill in skills:
+            processor.get_total_amount_of_peaks(skill)
+        for phase in phases:
+            for skill in skills:
+                processor.get_peaks_per_skill_per_phase(skill, phase)
+        for skill in skills:
+            processor.get_total_amount_of_trans_peaks(skill)
+        for phase in phases:
+            for skill in skills:
+                processor.get_trans_peaks_per_skill_per_phase(skill, phase)
 
     # Per lesson stuff
-    try:
-        for skill in skills:
-            processor.get_last_ability_first_lesson_of_skill(skill, id_)
-        for skill in skills:
-            processor.get_total_exercises_made_first_lesson(skill, id_)
-        for skill in skills:
-            processor.get_total_exercises_correct_first_lesson(skill, id_)
-        for skill in skills:
-            processor.calculate_percentage_correct_first_lesson_total(skill,
-                                                                      id_)
-    except NotImplementedError:
-        pass
-    try:
-        for skill in skills:
-            processor.get_unique_exercises_made_first_lesson(skill, id_)
-        # for skill in skills:
-        #     processor.get_unique_exercises_correct_first_lesson(skill, id_)
-        for skill in skills:
-            processor.calculate_percentage_correct_first_lesson_unique(skill,
-                                                                       id_)
-        for skill in skills:
-            processor.get_total_exercises_made_second_lesson(skill, id_)
-        for skill in skills:
-            processor.get_total_exercises_correct_second_lesson(skill, id_)
-        for skill in skills:
-            processor.calculate_percentage_correct_second_lesson_total(skill,
-                                                                       id_)
-    except NotImplementedError:
-        pass
-    try:
-        for skill in skills:
-            processor.get_unique_exercises_made_second_lesson(skill, id_)
-        for skill in skills:
-            processor.get_unique_exercises_correct_second_lesson(skill, id_)
-        for skill in skills:
-            processor.calculate_percentage_correct_second_lesson_unique(skill,
-                                                                        id_)
-        for skill in skills:
-            processor.detect_missing_skill_first_lesson(skill, id_)
-        for skill in skills:
-            processor.detect_missing_skill_repeat_lesson(skill, id_)
-    except NotImplementedError:
-        pass
+    if "per lesson" not in skipping:
+        try:
+            for skill in skills:
+                processor.get_last_ability_first_lesson_of_skill(skill, id_)
+            for skill in skills:
+                processor.get_total_exercises_made_first_lesson(skill, id_)
+            for skill in skills:
+                processor.get_total_exercises_correct_first_lesson(skill, id_)
+            for skill in skills:
+                processor.calculate_percentage_correct_first_lesson_total(skill,
+                                                                          id_)
+        except NotImplementedError:
+            pass
+        try:
+            for skill in skills:
+                processor.get_unique_exercises_made_first_lesson(skill, id_)
+            # for skill in skills:
+            #     processor.get_unique_exercises_correct_first_lesson(skill, id_)
+            for skill in skills:
+                processor.calculate_percentage_correct_first_lesson_unique(skill,
+                                                                           id_)
+            for skill in skills:
+                processor.get_total_exercises_made_second_lesson(skill, id_)
+            for skill in skills:
+                processor.get_total_exercises_correct_second_lesson(skill, id_)
+            for skill in skills:
+                processor.calculate_percentage_correct_second_lesson_total(skill,
+                                                                           id_)
+        except NotImplementedError:
+            pass
+        try:
+            for skill in skills:
+                processor.get_unique_exercises_made_second_lesson(skill, id_)
+            for skill in skills:
+                processor.get_unique_exercises_correct_second_lesson(skill, id_)
+            for skill in skills:
+                processor.calculate_percentage_correct_second_lesson_unique(skill,
+                                                                            id_)
+            for skill in skills:
+                processor.detect_missing_skill_first_lesson(skill, id_)
+            for skill in skills:
+                processor.detect_missing_skill_repeat_lesson(skill, id_)
+        except NotImplementedError:
+            pass
 
-    if id_ in ["kb"]:
-        for skill in skills:
-            processor.calculate_average_effort(skill, id_)
-        for skill in skills:
-            processor.calculate_total_effort(skill, id_)
+    # Effort stuff
+    if "effort" not in skipping:
+        if id_ in ["kb", "kb_all"]:
+            for skill in skills:
+                processor.calculate_average_effort(skill, id_)
+            for skill in skills:
+                processor.calculate_total_effort(skill, id_)
     # for skill in skills:
     #     for moment in [1, 2, 3]:
     #         processor.get_setgoal(skill, moment)
@@ -208,7 +219,8 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
     #     processor.get_shown_path_after_first_lesson(skill)
     #     processor.get_shown_path_after_repeat_lesson(skill)
 
-    save(saver, processor, f_name=id_)
+    if "saving" not in skipping:
+        save(saver, processor, f_name=id_)
 
 
 def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
@@ -224,7 +236,7 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
         data = data[['DateTime', 'UserId', 'ExerciseId',
                      'LOID', 'Correct', 'AbilityAfterAnswer', 'Effort']]
         print("Preprocessing data")
-        if not id_ in ["kb"]:
+        if not id_ in ["kb", "kb_all"]:
             unfiltered = loader.sort_data_by(data, "DateTime")
         else:
             unfiltered = data
@@ -233,8 +245,8 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
                                                    df=transfer_data,
                                                    copy_df=False)
         data = loader.filter(filters, df=unfiltered)
-        print(data.head())
-        if id_ in ["karlijn_en_babette", "kb"]:
+        # print(data.head())
+        if id_ in ["karlijn_en_babette", "kb", "kb_all"]:
             data = PhaseFinder().find_gynzy_phases(data, id_)
         else:
             data = PhaseFinder().find_phases(data)
@@ -243,7 +255,7 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
         loader.quick_save(data)
     first_att_data = loader.first_attempts_only(['UserId', 'ExerciseId',
                                                  'LOID'], df=data)
-    print(data.loc[data.UserId == 59491].tail(40).values)
+    # print(data.loc[data.UserId == 59491].tail(40).values)
     return data, first_att_data, transfer_data, log_data
 
 
@@ -334,7 +346,16 @@ def inspect(data):
 
 
 if __name__ == "__main__":
-    quick_loading = False
+    skipping = [
+        # "pre/post",
+        # "total exercises",
+        # "per skill",
+        # "curves",
+        # "per lesson",
+        # "effort",
+        # "saving"
+    ]
+    quick_loading = True
     estimate_parameters = False
-    run_pipeline(quick_loading, estimate_parameters, id_="kb",
-                 file_name="./res/data_kb.xlsx")
+    run_pipeline(quick_loading, estimate_parameters, id_="kb_all",
+                 file_name="./res/data_kb_all.xlsx", skipping=skipping)

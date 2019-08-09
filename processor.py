@@ -32,7 +32,9 @@ class Processor:
         self.p_peaks = {}
         self.plotter = Plotter()
         self.phase_dict = {"pre": 0, "gui": 1, "nap": 2, "ap": 3, "rap": 4,
-                           "post": 5, "": 999}
+                           "post": 5, "": 999, "day0": 0, "day1": 1,
+                           "day2": 1, "day3": 1, "day4": 4, "day5": 5,
+                           "out of school": -1}
         self.phase_curves = {}
         self.phase_ids = {}
         self.logs = logs
@@ -454,6 +456,7 @@ class Processor:
                        folder="simone", add_elo=False):
         desc = f"Processing curves for skill {skill}"
         data = self.att.copy()
+        # print(data[["ExerciseId", "UserId", "LOID"]].head(20))
         for user in tqdm(data['UserId'].unique(), desc=desc):
             # if user != 3010:
             #     continue
@@ -488,7 +491,7 @@ class Processor:
                 self.curves[key] = user_curve
                 self.n_peaks[key], self.p_peaks[key] = \
                     curve.get_peaks(user_curve)
-                print(select.phase.values)
+                print(user, ':\n', select.phase.values)
                 user_phases = select.phase.values
                 for phase in self.phases:
                     phase_key = f"{key}_{phase}"
