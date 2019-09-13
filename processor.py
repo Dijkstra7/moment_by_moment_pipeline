@@ -453,15 +453,20 @@ class Processor:
                 )
 
     def process_curves(self, skill, do_plot=False, method="biggest",
-                       folder="simone", add_elo=False):
+                       folder="simone", add_elo=False, add_ln=False):
         desc = f"Processing curves for skill {skill}"
-        data = self.att.copy()
+        if folder not in ["kb_all_attempts_curve"]:
+            data = self.att.copy()
+        else:
+            data = self.data.copy()
         # print(data[["ExerciseId", "UserId", "LOID"]].head(20))
         for user in tqdm(data['UserId'].unique(), desc=desc):
             # if user != 3010:
             #     continue
             select = data.loc[(data.UserId == user) &
-                              (data.LOID == skill)]
+                              (data.LOID == skill)
+                              # & (data.Lesson != 51582)
+            ]
 
             # ## Testing inspection
             # print(user)
@@ -486,7 +491,7 @@ class Processor:
             # ## End testing
 
             if len(select) > 3:
-                user_curve = curve.get_curve(select)
+                user_curve, user_l = curve.get_curve(select, testing=add_ln)
                 key = f"{user}_{skill}"
                 self.curves[key] = user_curve
                 self.n_peaks[key], self.p_peaks[key] = \
@@ -505,16 +510,24 @@ class Processor:
                 self.p_peaks[f"{user}_{skill}"] = 999
                 self.phase_curves[f"{user}_{skill}"] = 999
                 self.phase_ids[f"{user}_{skill}"] = 999
+                user_l = []
             if do_plot is True:
                 to_plot = [self.curves[f"{user}_{skill}"],
                            select.Correct.values * .05 - 1]
                 if add_elo is True:
+                    if folder in ["Nadine_plus_elo", "test"]:
+                        select.AbilityAfterAnswer = \
+                            select.AbilityAfterAnswer / 6.
                     to_plot.append(select.AbilityAfterAnswer * .01 -.5)
+                if add_ln is True:
+                    to_plot.append([u/2. for u in user_l])
                 self.plotter.plot_save(
                     to_plot,
                     f_name=
                     # f"{curve.get_type(curve.get_curve(select))}_"
-                    f"{folder}/{user}_{skill}", phase_data=select.phase.values
+                    f"{folder}/{user}_{skill}",
+                    phase_data=select.phase.values,
+                    use_legend=(not add_ln)
                 )
 
     def process_wrong_curves(self, skill, do_plot=False, method="biggest"):
@@ -1612,6 +1625,7 @@ class Processor:
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill)]
+            select.Effort = (select.Effort + 2)/4.
             if len(select) == 0:
                 value = 999
             else:
@@ -1643,6 +1657,7 @@ class Processor:
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill)]
+            select.Effort = (select.Effort + 2) / 4.
             if len(select) == 0:
                 value = 999
             else:

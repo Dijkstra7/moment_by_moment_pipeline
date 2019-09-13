@@ -11,12 +11,12 @@ import os
 from loader import DataLoader
 from processor import Processor
 from saver import Saver
-from config import filters, transfer_filters, GYNZY
-from phase_finder import PhaseFinder, pre_ids as pi
+from config import filters  # , transfer_filters, GYNZY
+from phase_finder import PhaseFinder  # , pre_ids as pi
 
 
 def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
-                 file_name=None, skipping=[]):
+                 file_name=None, skipping=[], plotting=True):
     """
     Main program that runs the pipeline processing all data.
 
@@ -67,6 +67,7 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
                           phases, log_data)
     if estimate_parameters is True:
         parameters = processor.estimate_parameters(skills, grain=1000)
+        print(parameters)
 
     # Start the processing of the different variables.
     # General stuff
@@ -92,7 +93,8 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
     if "per skill" not in skipping:
         for phase in ["pre", "post"]:
             for skill in skills:
-                processor.skill_count_total_correct_phase_exercise(skill, phase)
+                processor.skill_count_total_correct_phase_exercise(skill,
+                                                                   phase)
         for skill in skills:
             processor.calculate_gain_per_skill(skill)
         for skill in skills:
@@ -120,7 +122,8 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
         for skill in skills:
             processor.count_correct_adaptive_att_per_skill(skill)
         for skill in skills:
-            processor.calculate_percentage_correct_adaptive_att_per_skill(skill)
+            processor.calculate_percentage_correct_adaptive_att_per_skill(
+                skill)
 
     # Curve stuff
     if "curves" not in skipping:
@@ -130,11 +133,13 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
         # #     processor.process_wrong_curves(skill,
         # #         method="exclude_single_strays", do_plot=True)
         # # FOR TESTING ONLY
+        if not os.path.exists(f'./plots/{id_}'):
+            os.mkdir(f'./plots/{id_}')
         for skill in skills:
-            if not os.path.exists(f'./plots/{id_}'):
-                os.mkdir(f'./plots/{id_}')
             processor.process_curves(skill, method="exclude_single_strays",
-                                     do_plot=True, folder=id_, add_elo=True)
+                                     do_plot=plotting, folder=id_,
+                                     add_elo=True,
+                                     add_ln=True)
         for skill in skills:
             processor.calculate_type_curve(skill)
         for skill in skills:
@@ -169,35 +174,41 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
             for skill in skills:
                 processor.get_total_exercises_correct_first_lesson(skill, id_)
             for skill in skills:
-                processor.calculate_percentage_correct_first_lesson_total(skill,
-                                                                          id_)
+                processor.calculate_percentage_correct_first_lesson_total(
+                    skill,
+                    id_)
         except NotImplementedError:
             pass
         try:
             for skill in skills:
                 processor.get_unique_exercises_made_first_lesson(skill, id_)
             # for skill in skills:
-            #     processor.get_unique_exercises_correct_first_lesson(skill, id_)
+            #     processor.get_unique_exercises_correct_first_lesson(skill,
+            #     id_)
             for skill in skills:
-                processor.calculate_percentage_correct_first_lesson_unique(skill,
-                                                                           id_)
+                processor.calculate_percentage_correct_first_lesson_unique(
+                    skill,
+                    id_)
             for skill in skills:
                 processor.get_total_exercises_made_second_lesson(skill, id_)
             for skill in skills:
                 processor.get_total_exercises_correct_second_lesson(skill, id_)
             for skill in skills:
-                processor.calculate_percentage_correct_second_lesson_total(skill,
-                                                                           id_)
+                processor.calculate_percentage_correct_second_lesson_total(
+                    skill,
+                    id_)
         except NotImplementedError:
             pass
         try:
             for skill in skills:
                 processor.get_unique_exercises_made_second_lesson(skill, id_)
             for skill in skills:
-                processor.get_unique_exercises_correct_second_lesson(skill, id_)
+                processor.get_unique_exercises_correct_second_lesson(skill,
+                                                                     id_)
             for skill in skills:
-                processor.calculate_percentage_correct_second_lesson_unique(skill,
-                                                                            id_)
+                processor.calculate_percentage_correct_second_lesson_unique(
+                    skill,
+                    id_)
             for skill in skills:
                 processor.detect_missing_skill_first_lesson(skill, id_)
             for skill in skills:
@@ -227,16 +238,23 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
     print("Loading data")
     loader = DataLoader(f_name=f_name, s_name="Blad1")
     data, transfer_data = loader.load(quick_loading=ql)
-    log_data = loader.load_log()
+    log_data = None
+    if id_ not in ["test"]:
+        log_data = loader.load_log()
     if loader.quick_loaded is False:
         print("Organizing data")
         # data["DateTime"] = loader.combine_date_time(data["SubmitDate"],
         #                                             data["Time"])
 
-        data = data[['DateTime', 'UserId', 'ExerciseId',
-                     'LOID', 'Correct', 'AbilityAfterAnswer', 'Effort']]
+        if id_ in ["kb_all", "kb_all_attempts_curve"]:
+            data = data[['DateTime', 'UserId', 'ExerciseId',
+                         'LOID', 'Correct', 'AbilityAfterAnswer', 'Effort',
+                         'Lesson']]
+        else:
+            data = data[['DateTime', 'UserId', 'ExerciseId',
+                         'LOID', 'Correct', 'AbilityAfterAnswer']]
         print("Preprocessing data")
-        if not id_ in ["kb", "kb_all"]:
+        if id_ not in ["kb", "kb_all"]:
             unfiltered = loader.sort_data_by(data, "DateTime")
         else:
             unfiltered = data
@@ -246,8 +264,11 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
                                                    copy_df=False)
         data = loader.filter(filters, df=unfiltered)
         # print(data.head())
-        if id_ in ["karlijn_en_babette", "kb", "kb_all"]:
+        if id_ in ["karlijn_en_babette", "kb", "kb_all", "test",
+                   ]:
             data = PhaseFinder().find_gynzy_phases(data, id_)
+        elif id_ in ["kb_all_attempts_curve"]:
+            data = PhaseFinder().find_gynzy_phases_with_lesson_info(data, id_)
         else:
             data = PhaseFinder().find_phases(data)
             data = correct(data)
@@ -278,47 +299,47 @@ def save(saver, processor, f_name="test"):
 
 def inspect(data):
     print("Inspecting data")
-    inspect_users = []
-    inspect_users = [118472]
+    # inspect_users = []
+    # inspect_users = [118472]
     inspect_users = data.UserId.unique()
-    allowed_same_phase_next = {"pre": ["gui", "pre", "ap"],
-                               "gui": ["gui", "nap", "ap", "rap", "post",
-                                       "pre"],
-                               "nap": ["gui", "nap", "ap", "rap", "post"],
-                               "ap": ["rap", "ap", "post", "gui"],
-                               "rap": ["rap", "post"],
-                               "post": ["rap", "post"]}
-    allowed_other_phase_next = {"pre": ["gui", "pre", "ap"],
-                                "gui": ["gui", "nap", "ap", "rap", "post",
-                                        "pre"],
-                                "nap": ["gui", "nap", "ap", "rap", "post"],
-                                "ap": ["rap", "ap", "post", "gui", "nap"],
-                                "rap": ["rap", "post"],  # <- unsure
-                                "post": ["rap", "post"],
-                                "": ["pre", "gui"]}
+    # allowed_same_phase_next = {"pre": ["gui", "pre", "ap"],
+    #                            "gui": ["gui", "nap", "ap", "rap", "post",
+    #                                    "pre"],
+    #                            "nap": ["gui", "nap", "ap", "rap", "post"],
+    #                            "ap": ["rap", "ap", "post", "gui"],
+    #                            "rap": ["rap", "post"],
+    #                            "post": ["rap", "post"]}
+    # allowed_other_phase_next = {"pre": ["gui", "pre", "ap"],
+    #                             "gui": ["gui", "nap", "ap", "rap", "post",
+    #                                     "pre"],
+    #                             "nap": ["gui", "nap", "ap", "rap", "post"],
+    #                             "ap": ["rap", "ap", "post", "gui", "nap"],
+    #                             "rap": ["rap", "post"],  # <- unsure
+    #                             "post": ["rap", "post"],
+    #                             "": ["pre", "gui"]}
     for user in inspect_users:  # data.UserId.unique():
-        print ('==========\n', user)
+        print('==========\n', user)
         p = ""
-        l = ""
+        # l = ""
         t = 0
-        wrong_next_phase = False
+        d = None
+        # wrong_next_phase = False
         for id_, row in data.loc[(data.UserId == user)].iterrows():
-            if row.LOID != l:
-                checker = allowed_other_phase_next
-            else:
-                checker = allowed_same_phase_next
-            if row.phase not in checker[p]:
-                wrong_next_phase = True
+            # if row.LOID != l:
+            #     checker = allowed_other_phase_next
+            # else:
+            #     checker = allowed_same_phase_next
+            # if row.phase not in checker[p]:
+            # wrong_next_phase = True
             p = row.phase
             d = row.DateTime.day
-            l = row.LOID
+            # l = row.LOID
         len_pre = len(data.loc[(data.phase == "pre") & (data.UserId == user)])
         len_post = len(data.loc[(data.phase == "post") &
                                 (data.UserId == user)])
         if len_post != 24 or len_pre != 24:  # or wrong_next_phase is True:
-
-            len_all_pre = len(data.loc[(data.ExerciseId.isin(pi))
-                                        & (data.UserId == user)])
+            # len_all_pre = len(data.loc[(data.ExerciseId.isin(pi))
+            #                            & (data.UserId == user)])
             print(f"Total pre-ids:{len_pre}")
             print(f"Total post-ids:{len_post}")
             for id_, row in data.loc[(data.UserId == user)
@@ -330,7 +351,7 @@ def inspect(data):
                     row = row.drop("Correct")
                     if row.phase != p:
                         if not p == "":
-                            print(t+1)
+                            print(t + 1)
                         p = row.phase
                         print(row.values, end=" ")
                         t = 0
@@ -339,7 +360,7 @@ def inspect(data):
                     if row.DateTime.day != d:
                         d = row.DateTime.day
                         print(f"[{d} {row.LOID} '{row.phase}']", end=" ")
-            print(t+1)
+            print(t + 1)
         if user in [3112] or (len_pre != 24 and len_pre > 0):
             for id_, row in data.loc[(data.UserId == user)].iterrows():
                 print(row.values)
@@ -347,15 +368,19 @@ def inspect(data):
 
 if __name__ == "__main__":
     skipping = [
-        # "pre/post",
-        # "total exercises",
-        # "per skill",
+        "pre/post",
+        "total exercises",
+        "per skill",
         # "curves",
-        # "per lesson",
-        # "effort",
-        # "saving"
+        "per lesson",
+        "effort",
+        "saving"
     ]
     quick_loading = True
     estimate_parameters = False
-    run_pipeline(quick_loading, estimate_parameters, id_="kb_all",
-                 file_name="./res/data_kb_all.xlsx", skipping=skipping)
+    plotting = True
+    run_pipeline(quick_loading, estimate_parameters,
+                 id_="kb_all_attempts_curve",
+                 file_name="./res/data_kb_all_tests_info.xlsx",
+                 skipping=skipping,
+                 plotting=plotting)

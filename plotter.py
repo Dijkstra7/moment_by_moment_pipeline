@@ -22,7 +22,8 @@ class Plotter:
         if not os.path.exists(self.dir_):
             os.mkdir(self.dir_)
 
-    def plot_save(self, y_data, x_data=None, f_name="_", phase_data=None):
+    def plot_save(self, y_data, x_data=None, f_name="_", phase_data=None,
+                  use_legend=True):
         plt.gca().set_ylim(-1.15, 1.1)
         phases = []
         if isinstance(y_data[0], list) is False:
@@ -30,7 +31,8 @@ class Plotter:
         if x_data is None:
             x_data = range(1, max([len(y) for y in y_data]) + 4)
         for j, y in enumerate(y_data):
-            plt.plot(x_data[:len(y)], y, color=["cyan", "red", "black"][j])
+            plt.plot(x_data[:len(y)], y, color=["cyan", "red", "black",
+                                                "orangered"][j])
         if phase_data is not None:
             for j in range(len(phase_data)):
                 phase = phase_data[j]
@@ -42,7 +44,8 @@ class Plotter:
                 else:
                     plt.broken_barh([(j, 1)], (-0.5, 1),
                                     facecolors=self.color_dict[phase])
-            plt.legend()
+            if use_legend is True:
+                plt.legend()
         plt.gcf().savefig(f"{self.dir_}/{f_name}.png", dpi=300)
         plt.gcf().clear()
 

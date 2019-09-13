@@ -238,9 +238,71 @@ class PhaseFinder:
                 print("ap", len(ap_data), len(all_ap))
                 print("rap", len(rap_data), len(all_rap))
 
+    def get_experiment_day(self, row_datetime, first_day):
+        # Set up dictionary to match experiment dates to days
+        experiment_day = {"day0": [(3, 29), (4, 5), (5, 10), (5, 29)],
+                          "day1": [(4, 1), (4, 8), (5, 13), (6, 3)],
+                          "day2": [(4, 2), (4, 9), (5, 14), (6, 4)],
+                          "day3": [(4, 3), (4, 10), (5, 15), (6, 5)],
+                          "day4": [(4, 4), (4, 11), (5, 16), (6, 6)],
+                          "day5": [(4, 5), (4, 12), (5, 17), (6, 7)]}
+        if isinstance(row_datetime, str):
+            row_month = row_datetime[5:7]
+            row_day = row_datetime[8:10]
+        else:
+            assert isinstance(row_datetime, pd.datetime)
+            row_month = row_datetime.month
+            row_day = row_datetime.day
+        for key in experiment_day.keys():
+            if (row_month, row_day) in experiment_day[key]:
+
+                if row_month == 4 and row_day == 5 and first_day in ["29", 29]:
+                    return "day5"
+                return key
+
+    def find_gynzy_phases_with_lesson_info(self, data: pd.DataFrame, id_):
+        """
+        Find phases of the data in Gynzy. Filter on days instead of phase.
+        Additionally use the info from the lesson given by the raw data from
+        Gynzy.
+
+        Parameters
+        ----------
+        data: Pandas.DataFrame
+            The data to be processed
+        id_: str
+            identifier of what file is processed. For small differences in
+            processing
+
+        Returns
+        -------
+        Pandas.Dataframe
+            the data with added phases.
+        """
+        # Create phase column
+        data["phase"] = ""
+        # Process every user
+        for user in tqdm(data.UserId.unique(), desc="Setting phases "):
+            # Select user data
+            user_data = data.loc[data.UserId == user]
+            # Process the data
+            for index, row in user_data.iterrows():
+                if row.Lesson == 51582:
+                    data.loc[index, 'phase'] = "pre"
+                if row.Lesson == 51583:
+                    data.loc[index, 'phase'] = "post"
+                if row.DateTime.hour >= 12:
+                    data.loc[index, "phase"] = "out of school"
+            for index, row in user_data.iterrows():
+                if data.loc[index, 'phase'] == "":
+                    # Set phase to indicate the day of training
+                    data.loc[index, 'phase'] = self.get_experiment_day(
+                        row.DateTime, user_data.iloc[0].DateTime.day)
+        return data
+
     def find_gynzy_phases(self, data, id_):
         """
-        Only filter on pre and post phase data.
+        Find phases of the data in Gynzy. Filter on days instead of phase.
 
         Parameters
         ----------
@@ -275,7 +337,7 @@ class PhaseFinder:
                                 16072, 16085, 16764, 16765, ]
             for i in range(16702, 16726):
                 exclude_post_ids.append(i)
-        elif id_ == "kb_all":
+        elif id_ in ["kb_all"]:
             exclude_pre_ids = [31686, 32189, 32145, 32279, 31605, 32067,
                                32027, 7842, 7650, 7645, 9053, 9062, 9318,
                                9411, 9421]
@@ -283,24 +345,17 @@ class PhaseFinder:
                                 16437, 16407, 16282, 17596, 17602, 17646,
                                 14089, ]
 
-        # Set up dictionary to match experiment dates to days
-        experiment_day = {"day0": ['03-29', '04-05', '05-10', '05-29'],
-                          "day1": ['04-01', '04-08', '05-13', '06-03'],
-                          "day2": ['04-02', '04-09', '05-14', '06-04'],
-                          "day3": ['04-03', '04-10', '05-15', '06-05'],
-                          "day4": ['04-04', '04-11', '05-16', '06-06'],
-                          "day5": ['04-05', '04-12', '05-17', '06-07']}
-
         # Create phase column
         data["phase"] = ""
         print(data.head())
         # Process every user
         for user in tqdm(data.UserId.unique()):
-            print(f"processing {user}")
+            # print(f"processing {user}")
             # Select user data
             user_data = data.loc[data.UserId == user]
             # print(f"id: {id_}")
-            if id_ not in ["kb", "kb_all"]:
+
+            if id_ not in ["kb", "kb_all", "kb_all_attempts_curve"]:
                 user_data = user_data.sort_values("DateTime").reset_index()
 
             # Set up what days are available for processing
@@ -326,58 +381,68 @@ class PhaseFinder:
                 first_day = user_data.iloc[0].DateTime[8:10]
                 last_day = user_data.iloc[-1].DateTime[8:10]
 
-            if id_ == "kb_all":
+            if id_ in ["kb_all", "test", "kb_all_attempts_curve"]:
                 pre_days = ['29', '05', '10', '29']
                 post_days = ['05', '12', '17', '07']
-                first_day = user_data.iloc[0].DateTime[8:10]
-                last_day = user_data.iloc[-1].DateTime[8:10]
-                last_month = user_data.iloc[-1].DateTime[5:7]
+                if isinstance(user_data.iloc[0].DateTime, str):
+                    first_day = user_data.iloc[0].DateTime[8:10]
+                    last_day = user_data.iloc[-1].DateTime[8:10]
+                    last_month = user_data.iloc[-1].DateTime[5:7]
+                else:
+                    first_day = user_data.iloc[0].DateTime.day
+                    last_day = user_data.iloc[-1].DateTime.day
+                    last_month = user_data.iloc[-1].DateTime.month
+                if last_day in ['04', '05', 4, 5]:
+                    pre_days = ['29', 29]
 
-                if last_day in ['04', '05']:
-                    pre_days = ['29']
+                if first_day in ['08', 8]:
+                    pre_days = ['08', 8]
 
-                if first_day == '08':
-                    pre_days = ['08']
+                if last_month in ['06', 6]:
+                    post_days = ['07', 7]
+                    pre_days = ['29', 29]
 
-                if last_month == '06':
-                    post_days = ['07']
-                    pre_days = ['29']
+                if last_month in ['05', 5]:
+                    post_days = ['17', 17]
+                    pre_days = ['10', 10]
 
-                if last_month == '05':
-                    post_days = ['17']
-                    pre_days = ['10']
-
-                if last_month == '04':
-                    post_days = ['05', '12']
-                    if last_day == '12':
-                        pre_days = ['05']
-                        post_days = ['12']
-                    if last_day == '05':
-                        pre_days = ['29']
-                        post_days = ['05']
+                if last_month in ['04', 4]:
+                    post_days = ['05', '12', 5, 12]
+                    if last_day in ['12', 12]:
+                        pre_days = ['05', 5]
+                        post_days = ['12', 12]
+                    if last_day in ['05', 5]:
+                        pre_days = ['29', 29]
+                        post_days = ['05', 5]
 
             # Process the data
-            for index, row in user_data.iterrows():
-
+            for index, row in tqdm(user_data.iterrows(),
+                                   desc="Setting pre and post phases"):
+                if isinstance(row.DateTime, str):
+                    row_day = row.DateTime[8:10]
+                    row_hour = row.DateTime[11:13]
+                else:
+                    row_day = row.DateTime.day
+                    row_hour = row.DateTime.hour
                 if row.ExerciseId in gynzy_pre_ids and \
-                        row.DateTime[8:10] in pre_days and index \
+                        row_day in pre_days and index \
                         not in exclude_pre_ids:
                     data.loc[index, 'phase'] = "pre"
                     num_pre += 1
                 if row.ExerciseId in gynzy_post_ids and \
-                        row.DateTime[8:10] in post_days and \
+                        row_day in post_days and \
                         index not in exclude_post_ids:
                     data.loc[index, 'phase'] = "post"
 
-                if int(row.DateTime[11:13]) >= 15:
+                if int(row_hour) >= 15:
                     data.loc[index, "phase"] = "out of school"
-            if id_ not in ["kb", "kb_all"]:
+            if id_ not in ["kb", "kb_all", "kb_all_attempts_curve"]:
                 user_data = data.loc[data.UserId == user] \
                     .sort_values("DateTime").reset_index()
             post_data = data.loc[(data.phase == 'post') &
                                  (data.UserId == user)]
             pre_data = data.loc[(data.phase == 'pre') &
-                                 (data.UserId == user)]
+                                (data.UserId == user)]
 
             post_times = len(post_data.DateTime.unique())
             pre_times = len(pre_data.DateTime.unique())
@@ -412,16 +477,16 @@ class PhaseFinder:
                         printing.phase.unique()):
                     print(printing)
                     print("post and pre adjusted")
-            for index, row in user_data.iterrows():
+            for index, row in tqdm(user_data.iterrows(),
+                                   desc="Setting other phases"):
                 if data.loc[index, 'phase'] == "":
                     # Set phase to indicate the day of training
-                    for key in experiment_day.keys():
-                        if row.DateTime[5:10] in experiment_day[key]:
-                            data.loc[index, 'phase'] = key
-                            # check for ambiguity on april 5th
-                            if first_day == '05':
-                                if data.loc[index, 'phase'] == "day5":
-                                    data.loc[index, 'phase'] = key
+                    data.loc[index, 'phase'] = self.get_experiment_day(
+                        row.DateTime, first_day)
+                    # # check for ambiguity on april 5th
+                    # if first_day in ['05', 5]:
+                    #     if data.loc[index, 'phase'] == "day5":
+                    #         data.loc[index, 'phase'] = key
 
             original_max_columns = pd.options.display.max_columns
             original_max_colwidth = pd.options.display.max_colwidth

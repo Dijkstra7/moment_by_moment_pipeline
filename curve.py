@@ -32,21 +32,21 @@ def get_peaks(curve):
     return n_peaks, p_peaks
 
 
-def get_curve(df):
+def get_curve(df, testing=False):
     loid = df.LOID.values[0]
     # print(loid)
     p_l = config.PARAMETER_L[config.LEARNING_GOALS.index(loid)]
     p_t = config.PARAMETER_T[config.LEARNING_GOALS.index(loid)]
     p_g = config.PARAMETER_G[config.LEARNING_GOALS.index(loid)]
     p_s = config.PARAMETER_S[config.LEARNING_GOALS.index(loid)]
-    ln = get_ln(df, p_l, p_t, p_g, p_s)
+    ln = get_ln(df, p_l, p_t, p_g, p_s, testing)
     n_ln_t = [(1 - n) * p_t for n in ln]
     n_ln_n_t = [(1 - n) * (1 - p_t) for n in ln]
     return calculate_p_j(df.Correct.values, ln, n_ln_t, n_ln_n_t, (p_t, p_g,
-                                                                   p_s))
+                                                                   p_s)), ln
 
 
-def get_ln(df, l, t, g, s):
+def get_ln(df, l, t, g, s, testing):
     p_ln = [l]
     # print(l)
     for answer in df.Correct:
@@ -55,7 +55,10 @@ def get_ln(df, l, t, g, s):
             ln_prev_s = (k * (1 - s)) / ((k * (1 - s)) + ((1 - k) * g))
         else:
             ln_prev_s = (k * s) / ((k * s) + ((1 - k) * (1 - g)))
-        p_ln.append(ln_prev_s + (1 - ln_prev_s) * t)
+        new_k = ln_prev_s + (1 - ln_prev_s) * t
+        if testing is True:
+            new_k = min(new_k, 0.999)
+        p_ln.append(new_k)
         # print(answer, ln_prev_s, p_ln[-1])
     return p_ln[1:]
 

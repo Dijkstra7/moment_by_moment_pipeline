@@ -44,12 +44,29 @@ class DataLoader:
             data = pd.read_csv(self.file_name, infer_datetime_format=True)
         else:
             try:
-                data = pd.read_excel(self.file_name, sheet_name=self.sheetname)
+                data = pd.read_excel(self.file_name)
             except xlrd.biffh.XLRDError:
                 data = pd.read_excel(self.file_name)
         data.rename(columns={"LearningObjectiveId": "LOID"}, inplace=True)
         data.Correct.loc[data.Correct > 1] = 1
+        print("converting to datetime")
+        data.DateTime = pd.to_datetime(data.DateTime)
         transfer_data = data.loc[data.LOID.isin([7579, 8181])]
+        # Remove double entries in transfer test
+        for user in transfer_data.UserId.unique():
+            if len(transfer_data.loc[transfer_data.UserId == user])>16:
+                count = 0
+                max_count = 16
+                if user in [15909524, 383791]:
+                    max_count = 15
+                for index, item in transfer_data.loc[
+                    transfer_data.UserId==user].iterrows():
+                    print(count, index)
+                    if count>=max_count:
+                        print(index)
+                        transfer_data = transfer_data.drop(index)
+                    count += 1
+                print(transfer_data.loc[user==transfer_data.UserId].head(20))
         data = data.loc[data.LOID.isin(config.LEARNING_GOALS)]
         self.data = data.copy()
         return data, transfer_data
