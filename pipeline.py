@@ -16,7 +16,7 @@ from phase_finder import PhaseFinder  # , pre_ids as pi
 
 
 def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
-                 file_name=None, skipping=[], plotting=True):
+                 file_name=None, skipping=None, plotting=True):
     """
     Main program that runs the pipeline processing all data.
 
@@ -30,15 +30,17 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
     Parameters
     ----------
     ql: bool
-        whether the data should be reloaded from a preprocessed file.
+        Whether the data should be reloaded from a preprocessed file.
     estimate_parameters: bool
-        whether the parameters for the curves should be estimated.
+        Whether the parameters for the curves should be estimated.
     id_: str
         The identifier for the source
     file_name: str
         Path to the file.
-    skipping: list of str
-        a list of grouped options in the pipeline that will be skipped.
+    skipping: list of str or None
+        A list of grouped options in the pipeline that will be skipped.
+    plotting: bool
+        Whether to plot the curves when processing them.
 
     Returns
     -------
@@ -48,6 +50,8 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
     phases = ["pre", "gui", "nap", "ap", "rap", "post"]
     if file_name is None:
         file_name = "./res/simone_all_data_all_attempts.xlsx"
+    if skipping is None:
+        skipping = []
 
     # Load and preprocess data.
     data, first_att_data, transfer_data, log_data = load(
@@ -139,7 +143,7 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
             processor.process_curves(skill, method="exclude_single_strays",
                                      do_plot=plotting, folder=id_,
                                      add_elo=True,
-                                     add_ln=True)
+                                     add_ln=False)
         for skill in skills:
             processor.calculate_type_curve(skill)
         for skill in skills:
@@ -246,16 +250,20 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
         # data["DateTime"] = loader.combine_date_time(data["SubmitDate"],
         #                                             data["Time"])
 
-        if id_ in ["kb_all", "kb_all_attempts_curve"]:
+        if id_ in ["kb_all", "kb_all_attempts_curve", "kb_smoothed_curves"]:
             data = data[['DateTime', 'UserId', 'ExerciseId',
                          'LOID', 'Correct', 'AbilityAfterAnswer', 'Effort',
-                         'Lesson']]
+                         'Lesson', 'LessonProgress']]
         else:
             data = data[['DateTime', 'UserId', 'ExerciseId',
                          'LOID', 'Correct', 'AbilityAfterAnswer']]
         print("Preprocessing data")
         if id_ not in ["kb", "kb_all"]:
-            unfiltered = loader.sort_data_by(data, "DateTime")
+            if "LessonProgress" in data.columns:
+                unfiltered = loader.sort_data_by(data, ["DateTime",
+                                                        "LessonProgress"])
+            else:
+                unfiltered = loader.sort_data_by(data, "DateTime")
         else:
             unfiltered = data
         transfer_data = loader.first_attempts_only(['UserId', 'ExerciseId',
@@ -267,7 +275,7 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
         if id_ in ["karlijn_en_babette", "kb", "kb_all", "test",
                    ]:
             data = PhaseFinder().find_gynzy_phases(data, id_)
-        elif id_ in ["kb_all_attempts_curve"]:
+        elif id_ in ["kb_all_attempts_curve", "kb_smoothed_curves"]:
             data = PhaseFinder().find_gynzy_phases_with_lesson_info(data, id_)
         else:
             data = PhaseFinder().find_phases(data)
@@ -367,7 +375,7 @@ def inspect(data):
 
 
 if __name__ == "__main__":
-    skipping = [
+    do_skipping = [
         "pre/post",
         "total exercises",
         "per skill",
@@ -376,11 +384,11 @@ if __name__ == "__main__":
         "effort",
         "saving"
     ]
-    quick_loading = True
-    estimate_parameters = False
-    plotting = True
-    run_pipeline(quick_loading, estimate_parameters,
-                 id_="kb_all_attempts_curve",
+    do_quick_loading = True
+    do_estimate_parameters = False
+    do_plotting = True
+    run_pipeline(do_quick_loading, do_estimate_parameters,
+                 id_="kb_smoothed_curves",
                  file_name="./res/data_kb_all_tests_info.xlsx",
-                 skipping=skipping,
-                 plotting=plotting)
+                 skipping=do_skipping,
+                 plotting=do_plotting)

@@ -18,6 +18,42 @@ import curve
 from plotter import Plotter
 
 
+def smooth_curve(old_curve, factor=5):
+    smoothed_curve = []
+    begin_id = 0
+    begin_position = old_curve[begin_id]
+    end_id = min(factor-1, len(old_curve) - 1)
+    end_position = old_curve[end_id]
+    for i in range(len(old_curve)):
+        if i > end_id:
+            begin_id = i - 1
+            begin_position = old_curve[begin_id]
+            end_id = min(begin_id + factor, len(old_curve) - 1)
+            end_position = old_curve[end_id]
+        if begin_id != end_id:
+            smoothed_curve.append(begin_position + (i - begin_id)
+                                  * (end_position - begin_position)
+                                  / (end_id - begin_id))
+        else:
+            smoothed_curve.append(old_curve[i])
+    return smoothed_curve
+
+
+def smooth_curve_more(smooth_this_curve, left_window=2, right_window=0):
+    even_smoother_curve = []
+    for i in range(len(smooth_this_curve)):
+
+        sample_left_window = min(i, len(smooth_this_curve) - i - 1,
+                                 left_window)
+        sample_right_window = min(i, len(smooth_this_curve) - i - 1,
+                                    right_window)
+        sample_start = max(0, i-sample_left_window)
+        sample_end = min(i + sample_right_window, len(smooth_this_curve) - 1)
+        sample = smooth_this_curve[sample_start:sample_end + 1]
+        even_smoother_curve.append(sum(sample)/len(sample))
+    return even_smoother_curve
+
+
 class Processor:
 
     def __init__(self, df, att, short, long, phases, logs):
@@ -133,7 +169,8 @@ class Processor:
         self.long[lcid] = np.nan
         data = self.data.copy()
         print(data.loc[data.UserId == 59491].tail(40).values)
-        data = data.drop_duplicates(subset=['UserId', 'ExerciseId', 'LOID', 'phase'])
+        data = data.drop_duplicates(subset=['UserId', 'ExerciseId', 'LOID',
+                                            'phase'])
         print(data.loc[data.UserId == 59491].tail(40).values)
         for user in tqdm(data['UserId'].unique(), desc=desc):
             if len(data.loc[(data.phase == phase) &
@@ -156,7 +193,7 @@ class Processor:
             self.short.loc[self.short.LOID == skill, "Skill_Nameting"] - \
             self.short.loc[self.short.LOID == skill, "Skill_Voormeting"]
         self.long[lcid] = self.long[f"{loids[skill]}_Nameting"] - \
-                          self.long[f"{loids[skill]}_Voormeting"]
+            self.long[f"{loids[skill]}_Voormeting"]
 
     def get_last_ability_of_skill(self, skill):
         desc = f"Vindt laatste vaardigheidsscore van skill {skill}"
@@ -261,7 +298,8 @@ class Processor:
         scid = f"Percentagegoed_skill"
         lcid = f"Percentagegoed_{loids[skill]}"
         self.short.loc[self.short.LOID == skill, scid] = round(
-            self.short.loc[self.short.LOID == skill, "Aantalgoedallepogingen_skill"]
+            self.short.loc[
+                self.short.LOID == skill, "Aantalgoedallepogingen_skill"]
             /
             self.short.loc[self.short.LOID == skill,
                            "Aantalallepogingen_skill"]
@@ -455,7 +493,7 @@ class Processor:
     def process_curves(self, skill, do_plot=False, method="biggest",
                        folder="simone", add_elo=False, add_ln=False):
         desc = f"Processing curves for skill {skill}"
-        if folder not in ["kb_all_attempts_curve"]:
+        if folder not in ["kb_all_attempts_curve", "kb_smoothed_curves"]:
             data = self.att.copy()
         else:
             data = self.data.copy()
@@ -465,8 +503,8 @@ class Processor:
             #     continue
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill)
-                              # & (data.Lesson != 51582)
-            ]
+                # & (data.Lesson != 51582)
+                              ]
 
             # ## Testing inspection
             # print(user)
@@ -496,7 +534,7 @@ class Processor:
                 self.curves[key] = user_curve
                 self.n_peaks[key], self.p_peaks[key] = \
                     curve.get_peaks(user_curve)
-                print(user, ':\n', select.phase.values)
+                # print(user, ':\n', select.phase.values)
                 user_phases = select.phase.values
                 for phase in self.phases:
                     phase_key = f"{key}_{phase}"
@@ -518,9 +556,23 @@ class Processor:
                     if folder in ["Nadine_plus_elo", "test"]:
                         select.AbilityAfterAnswer = \
                             select.AbilityAfterAnswer / 6.
-                    to_plot.append(select.AbilityAfterAnswer * .01 -.5)
+                    to_plot.append(select.AbilityAfterAnswer * .01 - .5)
                 if add_ln is True:
-                    to_plot.append([u/2. for u in user_l])
+                    to_plot.append([u / 2. for u in user_l])
+                if folder in ["kb_smoothed_curves"]:
+                    to_plot = [
+                        list(smooth_curve(smooth_curve_more(to_plot[
+                                                                2].values,
+                                                            right_window=2
+                                                            ))),
+                        list(smooth_curve(smooth_curve_more(to_plot[
+                                                                2].values,
+                                                            right_window=2
+                                                            ))),
+
+                        list(to_plot[2].values),
+                    ]
+
                 self.plotter.plot_save(
                     to_plot,
                     f_name=
@@ -819,7 +871,7 @@ class Processor:
                                    (data.LOID == skill)].phase.values
             prev_phase = None
             value = 0
-            if len(peaks)!=0:
+            if len(peaks) != 0:
                 for pos, user_phase in enumerate(user_phases):
                     if user_phase != prev_phase:
                         print(f"\n{user}: {user_phase}, {prev_phase}, {pos}; "
@@ -1162,7 +1214,7 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def get_unique_exercises_made_first_lesson(self, skill,
-                                              id_="simone"):
+                                               id_="simone"):
         desc = f"Get total first attempts made in first lesson of skill " \
                f"{skill} "
         scid = f"aantal_uniek_gemaakt_in_eerste_les"
@@ -1253,7 +1305,7 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def calculate_percentage_correct_first_lesson_unique(self, skill,
-                                                        id_="simone"):
+                                                         id_="simone"):
         desc = f"Calculate percentage correct first attempt exercise made " \
                f"in first lesson of skill {skill} "
         scid = f"percentage_uniek_correct_in_eerste_les"
@@ -1303,7 +1355,7 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def get_total_exercises_made_second_lesson(self, skill,
-                                              id_="simone"):
+                                               id_="simone"):
         desc = f"Get total exercise made in second lesson of skill {skill} "
         scid = f"aantal_pogingen_gemaakt_in_herhalingsles"
         lcid = f"{scid}_{skill}"
@@ -1373,7 +1425,7 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def calculate_percentage_correct_second_lesson_total(self, skill,
-                                                        id_="simone"):
+                                                         id_="simone"):
         desc = f"Calculate percentage correct exercise made in second lesson " \
                f"of skill {skill} "
         scid = f"percentage_pogingen_correct_in_herhalingsles"
@@ -1483,7 +1535,7 @@ class Processor:
             self.long.loc[self.long.UserId == user, lcid] = value
 
     def calculate_percentage_correct_second_lesson_unique(self, skill,
-                                                        id_="simone"):
+                                                          id_="simone"):
         desc = f"Calculate percentage correct first attempt exercise made " \
                f"in second lesson of skill {skill} "
         scid = f"percentage_uniek_correct_in_herhalingsles"
@@ -1625,11 +1677,11 @@ class Processor:
         for user in tqdm(self.data['UserId'].unique(), desc=desc):
             select = data.loc[(data.UserId == user) &
                               (data.LOID == skill)]
-            select.Effort = (select.Effort + 2)/4.
+            select.Effort = (select.Effort + 2) / 4.
             if len(select) == 0:
                 value = 999
             else:
-                value = select.Effort.sum()/len(select)
+                value = select.Effort.sum() / len(select)
             self.short.loc[(self.short.UserId == user) &
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value
@@ -1666,8 +1718,8 @@ class Processor:
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value
 
-class ParameterExtractor:
 
+class ParameterExtractor:
     """
     Calculates the pre-calculated parameters.
 
@@ -1677,7 +1729,7 @@ class ParameterExtractor:
 
     def __init__(self, params_min=None, params_max=None):
         # params = [L0, T, G, S, F]
-        self.params_min = params_min or [1e-15]*4
+        self.params_min = params_min or [1e-15] * 4
         self.params_max = params_max or [1.0, 1.0, 0.3, 0.1]
 
     def brute_force_params(self, answers, same, grain=100, L0_fix=None,
@@ -1742,7 +1794,7 @@ class ParameterExtractor:
         if possible_range is None:
             return np.linspace(self.params_min[par_id],
                                self.params_max[par_id],
-                               int(grain * self.params_max[par_id]+1),
+                               int(grain * self.params_max[par_id] + 1),
                                endpoint=True)[1:]
         return [possible_range]
 
@@ -1814,7 +1866,7 @@ class ParameterExtractor:
                 break
         return best_l0, best_t, best_g, best_s
 
-    
+
 if __name__ == "__main__":
     import pipeline
 

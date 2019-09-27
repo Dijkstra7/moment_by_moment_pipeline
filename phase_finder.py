@@ -355,7 +355,8 @@ class PhaseFinder:
             user_data = data.loc[data.UserId == user]
             # print(f"id: {id_}")
 
-            if id_ not in ["kb", "kb_all", "kb_all_attempts_curve"]:
+            if id_ not in ["kb", "kb_all", "kb_all_attempts_curve",
+                           "kb_smoothed_curves"]:
                 user_data = user_data.sort_values("DateTime").reset_index()
 
             # Set up what days are available for processing
@@ -381,7 +382,8 @@ class PhaseFinder:
                 first_day = user_data.iloc[0].DateTime[8:10]
                 last_day = user_data.iloc[-1].DateTime[8:10]
 
-            if id_ in ["kb_all", "test", "kb_all_attempts_curve"]:
+            if id_ in ["kb_all", "test", "kb_all_attempts_curve",
+                       "kb_smoothed_curves"]:
                 pre_days = ['29', '05', '10', '29']
                 post_days = ['05', '12', '17', '07']
                 if isinstance(user_data.iloc[0].DateTime, str):
@@ -436,7 +438,8 @@ class PhaseFinder:
 
                 if int(row_hour) >= 15:
                     data.loc[index, "phase"] = "out of school"
-            if id_ not in ["kb", "kb_all", "kb_all_attempts_curve"]:
+            if id_ not in ["kb", "kb_all", "kb_all_attempts_curve",
+                           "kb_smoothed_curves"]:
                 user_data = data.loc[data.UserId == user] \
                     .sort_values("DateTime").reset_index()
             post_data = data.loc[(data.phase == 'post') &
