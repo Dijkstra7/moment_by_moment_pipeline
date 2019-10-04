@@ -146,27 +146,27 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
                                      add_ln=False)
         for skill in skills:
             processor.calculate_type_curve(skill)
-        for skill in skills:
-            processor.get_phase_of_last_peak(skill)
-        for skill in skills:
-            processor.get_phase_of_last_peak(skill)
-        for phase in phases:
-            for skill in skills:
-                processor.count_first_attempts_per_skill(phase, skill)
-        for skill in skills:
-            processor.calculate_general_spikiness(skill)
-        for skill in skills:
-            processor.calculate_phase_spikiness(skill, phases)
-        for skill in skills:
-            processor.get_total_amount_of_peaks(skill)
-        for phase in phases:
-            for skill in skills:
-                processor.get_peaks_per_skill_per_phase(skill, phase)
-        for skill in skills:
-            processor.get_total_amount_of_trans_peaks(skill)
-        for phase in phases:
-            for skill in skills:
-                processor.get_trans_peaks_per_skill_per_phase(skill, phase)
+        # for skill in skills:
+        #     processor.get_phase_of_last_peak(skill)
+        # for skill in skills:
+        #     processor.get_phase_of_last_peak(skill)
+        # for phase in phases:
+        #     for skill in skills:
+        #         processor.count_first_attempts_per_skill(phase, skill)
+        # for skill in skills:
+        #     processor.calculate_general_spikiness(skill)
+        # for skill in skills:
+        #     processor.calculate_phase_spikiness(skill, phases)
+        # for skill in skills:
+        #     processor.get_total_amount_of_peaks(skill)
+        # for phase in phases:
+        #     for skill in skills:
+        #         processor.get_peaks_per_skill_per_phase(skill, phase)
+        # for skill in skills:
+        #     processor.get_total_amount_of_trans_peaks(skill)
+        # for phase in phases:
+        #     for skill in skills:
+        #         processor.get_trans_peaks_per_skill_per_phase(skill, phase)
 
     # Per lesson stuff
     if "per lesson" not in skipping:
@@ -382,7 +382,7 @@ if __name__ == "__main__":
         # "curves",
         "per lesson",
         "effort",
-        "saving"
+        # "saving"
     ]
     do_quick_loading = True
     do_estimate_parameters = False

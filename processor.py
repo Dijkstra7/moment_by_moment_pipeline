@@ -561,10 +561,7 @@ class Processor:
                     to_plot.append([u / 2. for u in user_l])
                 if folder in ["kb_smoothed_curves"]:
                     to_plot = [
-                        list(smooth_curve(smooth_curve_more(to_plot[
-                                                                2].values,
-                                                            right_window=2
-                                                            ))),
+                        list(select.Effort.values/4),
                         list(smooth_curve(smooth_curve_more(to_plot[
                                                                 2].values,
                                                             right_window=2
@@ -577,7 +574,7 @@ class Processor:
                     to_plot,
                     f_name=
                     # f"{curve.get_type(curve.get_curve(select))}_"
-                    f"{folder}/{user}_{skill}",
+                    f"{folder}_plus_effort/{user}_{skill}",
                     phase_data=select.phase.values,
                     use_legend=(not add_ln)
                 )
