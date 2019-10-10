@@ -23,7 +23,7 @@ class Plotter:
             os.mkdir(self.dir_)
 
     def plot_save(self, y_data, x_data=None, f_name="_", phase_data=None,
-                  use_legend=True):
+                  use_legend=True, title=""):
         plt.gca().set_ylim(-1.15, 1.1)
         phases = []
         if phase_data is not None:
@@ -57,7 +57,8 @@ class Plotter:
             else:
                 plt.plot(x_data[:len(y)], y, color=["cyan", "red", "black",
                                                      "orangered"][j])
-
+        if title != "":
+            plt.title(title)
         plt.gcf().savefig(f"{self.dir_}/{f_name}.png", dpi=300)
         plt.gcf().clear()
 

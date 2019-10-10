@@ -144,29 +144,33 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
                                      do_plot=plotting, folder=id_,
                                      add_elo=True,
                                      add_ln=False)
+
+    print(skipping)
+    if "curve_statistics" not in skipping:
+        print("processing statistics of curve data")
         for skill in skills:
             processor.calculate_type_curve(skill)
-        # for skill in skills:
-        #     processor.get_phase_of_last_peak(skill)
-        # for skill in skills:
-        #     processor.get_phase_of_last_peak(skill)
-        # for phase in phases:
-        #     for skill in skills:
-        #         processor.count_first_attempts_per_skill(phase, skill)
-        # for skill in skills:
-        #     processor.calculate_general_spikiness(skill)
-        # for skill in skills:
-        #     processor.calculate_phase_spikiness(skill, phases)
-        # for skill in skills:
-        #     processor.get_total_amount_of_peaks(skill)
-        # for phase in phases:
-        #     for skill in skills:
-        #         processor.get_peaks_per_skill_per_phase(skill, phase)
-        # for skill in skills:
-        #     processor.get_total_amount_of_trans_peaks(skill)
-        # for phase in phases:
-        #     for skill in skills:
-        #         processor.get_trans_peaks_per_skill_per_phase(skill, phase)
+        for skill in skills:
+            processor.get_phase_of_last_peak(skill)
+        for skill in skills:
+            processor.get_phase_of_last_peak(skill)
+        for phase in phases:
+            for skill in skills:
+                processor.count_first_attempts_per_skill(phase, skill)
+        for skill in skills:
+            processor.calculate_general_spikiness(skill)
+        for skill in skills:
+            processor.calculate_phase_spikiness(skill, phases)
+        for skill in skills:
+            processor.get_total_amount_of_peaks(skill)
+        for phase in phases:
+            for skill in skills:
+                processor.get_peaks_per_skill_per_phase(skill, phase)
+        for skill in skills:
+            processor.get_total_amount_of_trans_peaks(skill)
+        for phase in phases:
+            for skill in skills:
+                processor.get_trans_peaks_per_skill_per_phase(skill, phase)
 
     # Per lesson stuff
     if "per lesson" not in skipping:
@@ -376,17 +380,18 @@ def inspect(data):
 
 if __name__ == "__main__":
     do_skipping = [
-        "pre/post",
-        "total exercises",
-        "per skill",
+        # "pre/post",
+        # "total exercises",
+        # "per skill",
         # "curves",
-        "per lesson",
-        "effort",
+        # "curve_statistics",
+        # "per lesson",
+        # "effort",
         # "saving"
     ]
     do_quick_loading = True
     do_estimate_parameters = False
-    do_plotting = True
+    do_plotting = False
     run_pipeline(do_quick_loading, do_estimate_parameters,
                  id_="kb_smoothed_curves",
                  file_name="./res/data_kb_all_tests_info.xlsx",

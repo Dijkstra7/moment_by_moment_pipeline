@@ -17,12 +17,48 @@ from tqdm import tqdm
 import curve
 from plotter import Plotter
 
+no_printing = True
+printt = print
+
+
+# Outcomment when you do want to print
+# def print(args, **kwargs):
+#     if no_printing is False:
+#         printt(args, kwargs)
+
+
+def order_curve(old_curve, last_part=10):
+    old_curve = [o + .5 for o in old_curve]
+    if len(old_curve) < 10:
+        return old_curve, "Too short to get a type"
+    towards = old_curve[-1 * last_part - 1]
+    last_old = old_curve[-1]
+    old_length = len(old_curve)
+    ordered_curve = []
+    for i in range(max(0, old_length - last_part)):
+        ordered_curve.append(towards / (old_length - last_part - 1) * i)
+    for i in range(0, last_part):
+        ordered_curve.append(
+            towards + (last_old - towards) * (i + 1) / last_part)
+    ordered_curve = [o - .5 for o in ordered_curve]
+    if last_old + .05 < towards:
+        curve_type = "Dalende lijn"
+    elif last_old > .8:
+        curve_type = "Eind 80%-100%"
+    elif last_old < .2:
+        curve_type = "Onder 20% en plateau of stijging"
+    elif last_old - .05 > towards:
+        curve_type = "Eind 20%-80% en stijging"
+    else:
+        curve_type = "Eind 20%-80% en plateau"
+    return ordered_curve, curve_type
+
 
 def smooth_curve(old_curve, factor=5):
     smoothed_curve = []
     begin_id = 0
     begin_position = old_curve[begin_id]
-    end_id = min(factor-1, len(old_curve) - 1)
+    end_id = min(factor - 1, len(old_curve) - 1)
     end_position = old_curve[end_id]
     for i in range(len(old_curve)):
         if i > end_id:
@@ -42,15 +78,14 @@ def smooth_curve(old_curve, factor=5):
 def smooth_curve_more(smooth_this_curve, left_window=2, right_window=0):
     even_smoother_curve = []
     for i in range(len(smooth_this_curve)):
-
         sample_left_window = min(i, len(smooth_this_curve) - i - 1,
                                  left_window)
         sample_right_window = min(i, len(smooth_this_curve) - i - 1,
-                                    right_window)
-        sample_start = max(0, i-sample_left_window)
+                                  right_window)
+        sample_start = max(0, i - sample_left_window)
         sample_end = min(i + sample_right_window, len(smooth_this_curve) - 1)
         sample = smooth_this_curve[sample_start:sample_end + 1]
-        even_smoother_curve.append(sum(sample)/len(sample))
+        even_smoother_curve.append(sum(sample) / len(sample))
     return even_smoother_curve
 
 
@@ -193,7 +228,7 @@ class Processor:
             self.short.loc[self.short.LOID == skill, "Skill_Nameting"] - \
             self.short.loc[self.short.LOID == skill, "Skill_Voormeting"]
         self.long[lcid] = self.long[f"{loids[skill]}_Nameting"] - \
-            self.long[f"{loids[skill]}_Voormeting"]
+                          self.long[f"{loids[skill]}_Voormeting"]
 
     def get_last_ability_of_skill(self, skill):
         desc = f"Vindt laatste vaardigheidsscore van skill {skill}"
@@ -493,10 +528,15 @@ class Processor:
     def process_curves(self, skill, do_plot=False, method="biggest",
                        folder="simone", add_elo=False, add_ln=False):
         desc = f"Processing curves for skill {skill}"
+        scid = "curve_type"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
         if folder not in ["kb_all_attempts_curve", "kb_smoothed_curves"]:
             data = self.att.copy()
         else:
             data = self.data.copy()
+            self.att = self.data
         # print(data[["ExerciseId", "UserId", "LOID"]].head(20))
         for user in tqdm(data['UserId'].unique(), desc=desc):
             # if user != 3010:
@@ -559,15 +599,17 @@ class Processor:
                     to_plot.append(select.AbilityAfterAnswer * .01 - .5)
                 if add_ln is True:
                     to_plot.append([u / 2. for u in user_l])
+                curve_type = ""
                 if folder in ["kb_smoothed_curves"]:
+                    ordered, curve_type = order_curve(to_plot[2].values)
                     to_plot = [
-                        list(select.Effort.values/4),
                         list(smooth_curve(smooth_curve_more(to_plot[
                                                                 2].values,
                                                             right_window=2
                                                             ))),
 
                         list(to_plot[2].values),
+                        ordered,
                     ]
 
                 self.plotter.plot_save(
@@ -576,8 +618,15 @@ class Processor:
                     # f"{curve.get_type(curve.get_curve(select))}_"
                     f"{folder}_plus_effort/{user}_{skill}",
                     phase_data=select.phase.values,
-                    use_legend=(not add_ln)
+                    use_legend=(not add_ln),
+                    title=curve_type
                 )
+            if folder in ["kb_smoothed_curves"]:
+                ordered, curve_type = order_curve(
+                    select.AbilityAfterAnswer.values * .01 - .5)
+                self.short.loc[(self.short.UserId == user) &
+                               (self.short.LOID == skill), scid] = curve_type
+                self.long.loc[self.long.UserId == user, lcid] = curve_type
 
     def process_wrong_curves(self, skill, do_plot=False, method="biggest"):
         desc = f"Processing curves for skill {skill}"
