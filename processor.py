@@ -42,15 +42,15 @@ def order_curve(old_curve, last_part=10):
             towards + (last_old - towards) * (i + 1) / last_part)
     ordered_curve = [o - .5 for o in ordered_curve]
     if last_old + .05 < towards:
-        curve_type = "Dalende lijn"
+        curve_type = "Dalende lijn"  # Stijger en daler
     elif last_old > .8:
-        curve_type = "Eind 80%-100%"
+        curve_type = "Eind 80%-100%"  # Hoog zwemmer
     elif last_old < .2:
-        curve_type = "Onder 20% en plateau of stijging"
+        curve_type = "Onder 20% en plateau of stijging"  # Laag zwemmer
     elif last_old - .05 > towards:
-        curve_type = "Eind 20%-80% en stijging"
+        curve_type = "Eind 20%-80% en stijging"  # Snelle stijger
     else:
-        curve_type = "Eind 20%-80% en plateau"
+        curve_type = "Eind 20%-80% en plateau"  # Langzame stijgere
     return ordered_curve, curve_type
 
 
