@@ -42,15 +42,15 @@ def order_curve(old_curve, last_part=10):
             towards + (last_old - towards) * (i + 1) / last_part)
     ordered_curve = [o - .5 for o in ordered_curve]
     if last_old + .05 < towards:
-        curve_type = "Dalende lijn"  # Stijger en daler
+        curve_type = 5  # "Dalende lijn"  # Stijger en daler
     elif last_old > .8:
-        curve_type = "Eind 80%-100%"  # Hoog zwemmer
+        curve_type = 1  # "Eind 80%-100%"  # Hoog zwemmer
     elif last_old < .2:
-        curve_type = "Onder 20% en plateau of stijging"  # Laag zwemmer
+        curve_type = 4  # "Onder 20% en plateau of stijging"  # Laag zwemmer
     elif last_old - .05 > towards:
-        curve_type = "Eind 20%-80% en stijging"  # Snelle stijger
+        curve_type = 2  # "Eind 20%-80% en stijging"  # Snelle stijger
     else:
-        curve_type = "Eind 20%-80% en plateau"  # Langzame stijgere
+        curve_type = 3  # "Eind 20%-80% en plateau"  # Langzame stijgere
     return ordered_curve, curve_type
 
 
@@ -528,7 +528,7 @@ class Processor:
     def process_curves(self, skill, do_plot=False, method="biggest",
                        folder="simone", add_elo=False, add_ln=False):
         desc = f"Processing curves for skill {skill}"
-        scid = "curve_type"
+        scid = "ELO_curve_type"
         lcid = f"{scid}_{skill}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
