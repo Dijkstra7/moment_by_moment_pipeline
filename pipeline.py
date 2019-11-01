@@ -380,13 +380,13 @@ def inspect(data):
 
 if __name__ == "__main__":
     do_skipping = [
-        # "pre/post",
-        # "total exercises",
-        # "per skill",
+        "pre/post",
+        "total exercises",
+        "per skill",
         # "curves",
-        # "curve_statistics",
-        # "per lesson",
-        # "effort",
+        "curve_statistics",
+        "per lesson",
+        "effort",
         # "saving"
     ]
     do_quick_loading = True

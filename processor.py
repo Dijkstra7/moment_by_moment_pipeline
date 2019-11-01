@@ -45,7 +45,7 @@ def order_curve(old_curve, last_part=10):
         curve_type = 5  # "Dalende lijn"  # Stijger en daler
     elif last_old > .8:
         curve_type = 1  # "Eind 80%-100%"  # Hoog zwemmer
-    elif last_old < .2:
+    elif last_old < .35:
         curve_type = 4  # "Onder 20% en plateau of stijging"  # Laag zwemmer
     elif last_old - .05 > towards:
         curve_type = 2  # "Eind 20%-80% en stijging"  # Snelle stijger

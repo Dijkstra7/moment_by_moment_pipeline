@@ -180,7 +180,7 @@ def create_feature_height_highest_decreasing_slope(selected_data):
     user = selected_data.UserId.values[0]
     loid = selected_data.LOID.values[0]
     slopes = all_decreasing_slopes[(user, loid)]
-    height_slopes = [s[1][1]-s[1][0] for s in slopes]
+    height_slopes = [s[1][0]-s[1][1] for s in slopes]
     if len(height_slopes) < 1:
         return 0
     return max(height_slopes)
@@ -223,8 +223,68 @@ def create_feature_spikyness(selected_data):
     return spikyness
 
 
+def create_feature_start_highest_increasing_slope(selected_data):
+    user = selected_data.UserId.values[0]
+    loid = selected_data.LOID.values[0]
+    slopes = all_increasing_slopes[(user, loid)]
+    if len(slopes) == 0:
+        return 0
+    height_slopes = [s[1][1] - s[1][0] for s in slopes]
+    max_height_id = height_slopes.index(max(height_slopes))
+    return slopes[max_height_id][0][0]/len(selected_data)
+
+
+def create_feature_start_highest_decreasing_slope(selected_data):
+    user = selected_data.UserId.values[0]
+    loid = selected_data.LOID.values[0]
+    slopes = all_decreasing_slopes[(user, loid)]
+    if len(slopes) == 0:
+        return 0
+    height_slopes = [s[1][0] - s[1][1] for s in slopes]
+    max_height_id = height_slopes.index(max(height_slopes))
+    return slopes[max_height_id][0][0]/len(selected_data)
+
+
+def create_feature_start_longest_plateau(selected_data):
+    user = selected_data.UserId.values[0]
+    loid = selected_data.LOID.values[0]
+    plateaus = all_plateaus[(user, loid)]
+    if len(plateaus) == 0:
+        return 0
+    length_slopes = [s[1][0] - s[1][1] for s in plateaus]
+    max_length_id = length_slopes.index(max(length_slopes))
+    return plateaus[max_length_id][0][0]/len(selected_data)
+
+
+def create_feature_end_latest_increasing_slope(selected_data):
+    user = selected_data.UserId.values[0]
+    loid = selected_data.LOID.values[0]
+    slopes = all_increasing_slopes[(user, loid)]
+    if len(slopes) == 0:
+        return 0
+    return slopes[-1][0][1]/len(selected_data)
+
+
+def create_feature_end_latest_decreasing_slope(selected_data):
+    user = selected_data.UserId.values[0]
+    loid = selected_data.LOID.values[0]
+    slopes = all_decreasing_slopes[(user, loid)]
+    if len(slopes) == 0:
+        return 0
+    return slopes[-1][0][1]/len(selected_data)
+
+
+def create_feature_end_latest_plateau(selected_data):
+    user = selected_data.UserId.values[0]
+    loid = selected_data.LOID.values[0]
+    plateaus = all_plateaus[(user, loid)]
+    if len(plateaus) == 0:
+        return 0
+    return plateaus[-1][0][1]/len(selected_data)
+
+
 def normalize(features):
-    for column in features.columns[3:]:
+    for column in features.columns[2:]:
         features[column] = preprocessing.scale(features[column])
     return features
 
@@ -384,15 +444,16 @@ def select_features(features):
 
     # Try correlation method
     print(features.columns)
-    print(features.values[:, 2:].T)
-    correlations = np.cov(features.values[:, 3:].T.astype(float))
+    off = 2
+    print(features.values[:, off:].T)
+    correlations = np.cov(features.values[:, off:].T.astype(float))
     plt.imshow(correlations, cmap="Paired", interpolation="nearest")
     plt.colorbar()
 
-    plt.xticks([c * 1. for c in range(len(features.columns[3:]))],
-               features.columns[3:], rotation=90)
-    plt.yticks([c * 1. for c in range(len(features.columns[3:]))],
-               features.columns[3:])
+    plt.xticks([c * 1. for c in range(len(features.columns[off:]))],
+               features.columns[off:], rotation=90)
+    plt.yticks([c * 1. for c in range(len(features.columns[off:]))],
+               features.columns[off:])
     plt.show()
 
 
@@ -424,6 +485,24 @@ def create_decreasing_slopes(elo_curve, diff_max=5, min_len=3):
     return decreased_slopes
 
 
+def show_features(data):
+    for i in range(3, 10):
+        first_curve = data.loc[(data.UserId == data.UserId.unique()[i]) &
+                               (data.LOID == data.LOID.values[
+                                   0])].AbilityAfterAnswer.values
+        first_curve = list(first_curve)
+        plateaus = create_plateaus(first_curve)
+        small_plateaus = create_plateaus(first_curve, min_len=4)
+        inc_slopes = create_increasing_slopes(first_curve)
+        des_slopes = create_decreasing_slopes(first_curve)
+        plot_graph([(first_curve,),
+                    *[(p[0], p[1], "r") for p in small_plateaus],
+                    *[(p[0], p[1], "g") for p in plateaus],
+                    *[(s[0], s[1], "k") for s in inc_slopes],
+                    *[(s[0], s[1], "y") for s in des_slopes],
+                ])
+
+
 def create_clusters(data: pd.DataFrame, k=5, method=None,
                     save_dir="./output/clusters/kb.csv", quick_load=True):
     """
@@ -446,21 +525,7 @@ def create_clusters(data: pd.DataFrame, k=5, method=None,
 
     """
     implemented_methods = ["K-means", "Agglomerate_clustering", "mean_shift"]
-    # for i in range(3, 10):
-    #     first_curve = data.loc[(data.UserId == data.UserId.unique()[i]) &
-    #                            (data.LOID == data.LOID.values[
-    #                                0])].AbilityAfterAnswer.values
-    #     first_curve = list(first_curve)
-    #     plateaus = create_plateaus(first_curve)
-    #     small_plateaus = create_plateaus(first_curve, min_len=4)
-    #     inc_slopes = create_increasing_slopes(first_curve)
-    #     des_slopes = create_decreasing_slopes(first_curve)
-    #     plot_graph([(first_curve,),
-    #                 *[(p[0], p[1], "r") for p in small_plateaus],
-    #                 *[(p[0], p[1], "g") for p in plateaus],
-    #                 *[(s[0], s[1], "k") for s in inc_slopes],
-    #                 *[(s[0], s[1], "y") for s in des_slopes],
-    #                 ])
+    # show_features(data)
     features = extract_features(data, quick_load=quick_load)
     # features = normalize(features)
     # select_features(features)
@@ -469,15 +534,19 @@ def create_clusters(data: pd.DataFrame, k=5, method=None,
         raise NotImplementedError(f"The {method} method is not yet "
                                   f"implemented")
 
-    X = features.values[:, 3:]
+    X = features.values[:, 2:]
     print(X[0], "<-")
     features["cluster"] = 0
 
     if k is not None:  # TODO: Start clustering with selected features?
         if method == "K-means":
-            clusters = KMeans(n_clusters=k,
+            kmeans = KMeans(n_clusters=k,
                               random_state=13121992
-                              ).fit_predict(features.values[:, 2:])
+                              )
+            kmeans.fit(X)
+            clusters = kmeans.predict(X)
+
+            print(kmeans.cluster_centers_)
             print(len(clusters), len(features["cluster"]))
         if method == "mean_shift":
             bandwidth = estimate_bandwidth(X)
@@ -505,13 +574,13 @@ def create_clusters(data: pd.DataFrame, k=5, method=None,
         plt.xlabel('Number of clusters')
         plt.ylabel('Distortion')
         plt.show()
-    features.to_csv(save_dir)
+    features.to_csv(f"./output/clusters/kb_{k}.csv")
     return features
 
 
 def extract_features(data: pd.DataFrame,
                      save_loc="./output/clusters/features/kb_features.csv",
-                     quick_load=False) \
+                     quick_load=False, k=1) \
         -> pd.DataFrame:
     if os.path.exists(save_loc) and quick_load is True:
         feature_frame = pd.read_csv(save_loc)
@@ -532,6 +601,12 @@ def extract_features(data: pd.DataFrame,
         # "number_of_plateaus",
         # "number_of_peaks",
         # "spikyness",
+        ## "start_highest_increasing_slope",
+        ## "start_highest_decreasing_slope",
+        ## "start_longest_plateau",
+        ## "end_latest_increasing_slope",
+        ## "end_latest_decreasing_slope",
+        ##"end_latest_plateau",
     ]
 
     # Create extraction functions
@@ -548,7 +623,7 @@ def extract_features(data: pd.DataFrame,
             curve = list(curve)
             key = (user, loid)
             all_increasing_slopes[key] = create_increasing_slopes(curve)
-            all_plateaus[key] = create_plateaus(curve)
+            all_plateaus[key] = create_plateaus(curve, min_len=3)
             all_decreasing_slopes[key] = create_decreasing_slopes(curve)
 
     # Extract the features per user and loid.
@@ -561,7 +636,7 @@ def extract_features(data: pd.DataFrame,
                                   (feature_frame.loid == loid),
                                   feature] = feature_func(selected_data)
     create_dir_if_not_exists("/".join(save_loc.split("/")[:-1]))
-    feature_frame.to_csv(save_loc)
+    feature_frame.to_csv(save_loc, index=False)
     return feature_frame
 
 
@@ -672,7 +747,10 @@ def plot_clustered_curves(clustered_data, data,
         curve_data = data.loc[(data.UserId == user) &
                               (data.LOID == loid)].AbilityAfterAnswer.values
         plt.gcf().clear()
-        plt.plot(curve_data)
+        color = "r"
+        if cluster % 2 == 1:
+            color = "b"
+        plt.plot(curve_data, c=color)
         plt.title(f"Cluster {cluster}")
         plt.gca().set_ylim(-1, 101)
         plt.gcf().savefig(save_dir+"/"+curve_save_name)
@@ -682,9 +760,9 @@ if __name__ == "__main__":
     data_location = "./res/data_kb_all_tests_info.xlsx"
     use_data = load_data(data_location)
     # create_clusters(use_data, k=None, method="K-means", quick_load=True)
-    for i in range(4, 12):
-        clustered = create_clusters(use_data, k=i, method="K_means",
+    for i in range(3, 4):
+        clustered = create_clusters(use_data, k=i, method="K-means",
                                     quick_load=True)
         plot_clustered_curves(clustered,
                               use_data,
-                              save_dir=f"./output/clusters/{i}curves2")
+                              save_dir=f"./output/clusters/{i}curvestest")
