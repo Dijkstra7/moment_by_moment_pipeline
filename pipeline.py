@@ -70,7 +70,7 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
     processor = Processor(data, first_att_data, saver.short, saver.long,
                           phases, log_data)
     if estimate_parameters is True:
-        parameters = processor.estimate_parameters(skills, grain=1000)
+        parameters = processor.estimate_parameters(skills, grain=100)
         print(parameters)
 
     # Start the processing of the different variables.
@@ -254,7 +254,8 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
         # data["DateTime"] = loader.combine_date_time(data["SubmitDate"],
         #                                             data["Time"])
 
-        if id_ in ["kb_all", "kb_all_attempts_curve", "kb_smoothed_curves"]:
+        if id_ in ["kb_all", "kb_all_attempts_curve", "kb_smoothed_curves",
+                   "jm"]:
             data = data[['DateTime', 'UserId', 'ExerciseId',
                          'LOID', 'Correct', 'AbilityAfterAnswer', 'Effort',
                          'Lesson', 'LessonProgress']]
@@ -276,7 +277,7 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
                                                    copy_df=False)
         data = loader.filter(filters, df=unfiltered)
         # print(data.head())
-        if id_ in ["karlijn_en_babette", "kb", "kb_all", "test",
+        if id_ in ["karlijn_en_babette", "kb", "kb_all", "test", "jm",
                    ]:
             data = PhaseFinder().find_gynzy_phases(data, id_)
         elif id_ in ["kb_all_attempts_curve", "kb_smoothed_curves"]:
@@ -380,20 +381,20 @@ def inspect(data):
 
 if __name__ == "__main__":
     do_skipping = [
-        "pre/post",
-        "total exercises",
-        "per skill",
+        # "pre/post",
+        # "total exercises",
+        # "per skill",
         # "curves",
-        "curve_statistics",
-        "per lesson",
-        "effort",
+        # "curve_statistics",
+        # "per lesson",
+        # "effort",
         # "saving"
     ]
     do_quick_loading = True
     do_estimate_parameters = False
     do_plotting = False
     run_pipeline(do_quick_loading, do_estimate_parameters,
-                 id_="kb_smoothed_curves",
-                 file_name="./res/data_kb_all_tests_info.xlsx",
+                 id_="jm",
+                 file_name="./res/data_jm.xlsx",
                  skipping=do_skipping,
                  plotting=do_plotting)

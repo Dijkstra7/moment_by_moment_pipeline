@@ -616,7 +616,7 @@ class Processor:
                     to_plot,
                     f_name=
                     # f"{curve.get_type(curve.get_curve(select))}_"
-                    f"{folder}_plus_effort/{user}_{skill}",
+                    f"{folder}/{user}_{skill}",
                     phase_data=select.phase.values,
                     use_legend=(not add_ln),
                     title=curve_type
@@ -1101,6 +1101,8 @@ class Processor:
                          &
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                non_repeat = data.phase.isin(["day1", "day2", "day3"])
             else:
                 raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
@@ -1148,6 +1150,8 @@ class Processor:
                          &
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                non_repeat = data.phase.isin(["day1", "day2", "day3"])
             else:
                 raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
@@ -1193,6 +1197,8 @@ class Processor:
                          &
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                non_repeat = data.phase.isin(["day1", "day2", "day3"])
             else:
                 raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
@@ -1239,6 +1245,8 @@ class Processor:
                          &
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                non_repeat = data.phase.isin(["day1", "day2", "day3"])
             else:
                 raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
@@ -1289,6 +1297,8 @@ class Processor:
                          &
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                non_repeat = data.phase.isin(["day1", "day2", "day3"])
             else:
                 raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
@@ -1334,6 +1344,8 @@ class Processor:
                          &
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                non_repeat = data.phase.isin(["day1", "day2", "day3"])
             else:
                 raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
@@ -1380,6 +1392,8 @@ class Processor:
                          &
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                non_repeat = data.phase.isin(["day1", "day2", "day3"])
             else:
                 raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
@@ -1419,6 +1433,8 @@ class Processor:
                         ((data.DateTime.dt.day == 13) &  # And
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
             else:
                 raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
@@ -1454,6 +1470,8 @@ class Processor:
                         ((data.DateTime.dt.day == 13) &  # And
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
             else:
                 raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
@@ -1490,6 +1508,8 @@ class Processor:
                         ((data.DateTime.dt.day == 13) &  # And
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
             else:
                 raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
@@ -1529,6 +1549,8 @@ class Processor:
                         ((data.DateTime.dt.day == 13) &  # And
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
             else:
                 raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
@@ -1564,6 +1586,8 @@ class Processor:
                         ((data.DateTime.dt.day == 13) &  # And
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
             else:
                 raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
@@ -1600,6 +1624,8 @@ class Processor:
                         ((data.DateTime.dt.day == 13) &  # And
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
             else:
                 raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests
@@ -1648,6 +1674,8 @@ class Processor:
                          &
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                non_repeat = data.phase.isin(["day1", "day2", "day3"])
             else:
                 raise NotImplementedError
             # Select the data that is not in the repeat lesson or in tests
@@ -1683,6 +1711,8 @@ class Processor:
                         ((data.DateTime.dt.day == 13) &  # And
                          (data.DateTime.dt.month == 12))
                 )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
             else:
                 raise NotImplementedError
             # Select the data that is in the repeat lesson and not in tests

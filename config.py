@@ -10,8 +10,9 @@ use_estimated = False
 parameters_babette = False
 parameters_simone = False
 parameters_nadine = False
-parameters_kb = True
+parameters_kb = False
 parameters_kb_experiment = False
+parameters_jm = True
 no_limit = False
 
 import numpy as np
@@ -114,3 +115,9 @@ if parameters_kb_experiment is True:
     PARAMETER_T = [.049, .039, .043]
     PARAMETER_G = [.3, .3, .3]
     PARAMETER_S = [.1, .1, .001]
+
+if parameters_jm is True:
+    PARAMETER_L = [.17, .23, .04]
+    PARAMETER_T = [.06, .09, .05]
+    PARAMETER_G = [.3, .3, .3]
+    PARAMETER_S = [.1, .1, .01]

@@ -32,13 +32,7 @@ class Saver:
                     if user not in \
                             self.short.loc[self.short['LOID'] == goal].values:
                         print(f"missing user {user} in goal {goal}")
-
-
-
-
             print(self.skills)
-
-
             raise ValueError
 
     def set_up_short(self, df):

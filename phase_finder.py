@@ -238,14 +238,23 @@ class PhaseFinder:
                 print("ap", len(ap_data), len(all_ap))
                 print("rap", len(rap_data), len(all_rap))
 
-    def get_experiment_day(self, row_datetime, first_day):
+    def get_experiment_day(self, row_datetime, first_day, id_="kb"):
         # Set up dictionary to match experiment dates to days
-        experiment_day = {"day0": [(3, 29), (4, 5), (5, 10), (5, 29)],
-                          "day1": [(4, 1), (4, 8), (5, 13), (6, 3)],
-                          "day2": [(4, 2), (4, 9), (5, 14), (6, 4)],
-                          "day3": [(4, 3), (4, 10), (5, 15), (6, 5)],
-                          "day4": [(4, 4), (4, 11), (5, 16), (6, 6)],
-                          "day5": [(4, 5), (4, 12), (5, 17), (6, 7)]}
+        if id_ == "kb":
+            experiment_day = {"day0": [(3, 29), (4, 5), (5, 10), (5, 29)],
+                              "day1": [(4, 1), (4, 8), (5, 13), (6, 3)],
+                              "day2": [(4, 2), (4, 9), (5, 14), (6, 4)],
+                              "day3": [(4, 3), (4, 10), (5, 15), (6, 5)],
+                              "day4": [(4, 4), (4, 11), (5, 16), (6, 6)],
+                              "day5": [(4, 5), (4, 12), (5, 17), (6, 7)]}
+        elif id_ == "jm":
+            experiment_day = {"day0": [(11, 10), (11, 17)],
+                              "day1": [(11, 11), (11, 18)],
+                              "day2": [(11, 12), (11, 19)],
+                              "day3": [(11, 13), (11, 20)],
+                              "day4": [(11, 14), (11, 21)],
+                              "day5": [(11, 15), (11, 22)]}
+
         if isinstance(row_datetime, str):
             row_month = row_datetime[5:7]
             row_day = row_datetime[8:10]
@@ -297,7 +306,7 @@ class PhaseFinder:
                 if data.loc[index, 'phase'] == "":
                     # Set phase to indicate the day of training
                     data.loc[index, 'phase'] = self.get_experiment_day(
-                        row.DateTime, user_data.iloc[0].DateTime.day)
+                        row.DateTime, user_data.iloc[0].DateTime.day, id_=id_)
         return data
 
     def find_gynzy_phases(self, data, id_):
@@ -356,7 +365,7 @@ class PhaseFinder:
             # print(f"id: {id_}")
 
             if id_ not in ["kb", "kb_all", "kb_all_attempts_curve",
-                           "kb_smoothed_curves"]:
+                           "kb_smoothed_curves", "jm"]:
                 user_data = user_data.sort_values("DateTime").reset_index()
 
             # Set up what days are available for processing
@@ -381,6 +390,12 @@ class PhaseFinder:
                 post_days = ['17', '07']
                 first_day = user_data.iloc[0].DateTime[8:10]
                 last_day = user_data.iloc[-1].DateTime[8:10]
+
+            if id_ in ["jm"]:
+                post_days = [15, 22]
+                pre_days = [11, 18]
+                first_day = user_data.iloc[0].DateTime.day
+                last_day = user_data.iloc[-1].DateTime.day
 
             if id_ in ["kb_all", "test", "kb_all_attempts_curve",
                        "kb_smoothed_curves"]:
@@ -439,7 +454,7 @@ class PhaseFinder:
                 if int(row_hour) >= 15:
                     data.loc[index, "phase"] = "out of school"
             if id_ not in ["kb", "kb_all", "kb_all_attempts_curve",
-                           "kb_smoothed_curves"]:
+                           "kb_smoothed_curves", "jm"]:
                 user_data = data.loc[data.UserId == user] \
                     .sort_values("DateTime").reset_index()
             post_data = data.loc[(data.phase == 'post') &
@@ -478,14 +493,15 @@ class PhaseFinder:
                     len(user_data))
                 if len(printing.DateTime.unique()) > len(
                         printing.phase.unique()):
-                    print(printing)
-                    print("post and pre adjusted")
+                    pass
+                    # print(printing)
+                    # print("post and pre adjusted")
             for index, row in tqdm(user_data.iterrows(),
                                    desc="Setting other phases"):
                 if data.loc[index, 'phase'] == "":
                     # Set phase to indicate the day of training
                     data.loc[index, 'phase'] = self.get_experiment_day(
-                        row.DateTime, first_day)
+                        row.DateTime, first_day, id_=id_)
                     # # check for ambiguity on april 5th
                     # if first_day in ['05', 5]:
                     #     if data.loc[index, 'phase'] == "day5":
@@ -498,7 +514,7 @@ class PhaseFinder:
 
             pd.options.display.max_colwidth = 300
             pd.options.display.width = 120
-            print(data.loc[data.UserId == user])
+            # print(data.loc[data.UserId == user])
 
             pd.options.display.max_columns = original_max_columns
             pd.options.display.max_colwidth = original_max_colwidth
