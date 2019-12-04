@@ -18,12 +18,13 @@ import config
 
 class DataLoader:
 
-    def __init__(self, f_name=None, s_name=None):
+    def __init__(self, f_name=None, s_name=None, translate=False):
         self.file_name = f_name or "./res/leerpaden_app.xlsx"
         self.sheetname = s_name or "AllData"
         self.data = None
         self.log_data = None
         self.quick_loaded = False
+        self.translate = translate
 
     def load(self, from_csv=False, quick_loading=True):
         transfer_data = None
@@ -71,6 +72,7 @@ class DataLoader:
                 # print(transfer_data.loc[user==transfer_data.UserId].head(20))
         data = data.loc[(data.LOID.isin(config.LEARNING_GOALS))]
         self.data = data.copy()
+        print(data.head, transfer_data.head)
         return data, transfer_data
 
     # def read_date(self, lst):

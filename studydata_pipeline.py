@@ -3,6 +3,7 @@ import pickle
 import pandas as pd
 import os
 
+from phase_finder import PhaseFinder
 from saver import Saver
 from studydata_processor import StudyDataProcessor
 
@@ -33,6 +34,12 @@ def run_studydata_pipeline(ql=True, estimate_parameters=False, id_="simone",
             processor.get_click_changes_third_day(skill, id_)
         for skill in skills:
             processor.get_click_changes_fourth_day(skill, id_)
+        for skill in skills:
+            for difficulty in ["easy", "medium", "hard"]:
+                for day in [None, 1, 2, 3, 4]:
+                    for info_type in ["selection", "sums made"]:
+                        processor.get_difficulty_details(skill, id_, day,
+                                                         difficulty, info_type)
 
     # Do saving stuff
     if "saving" not in skipping:
@@ -43,6 +50,7 @@ def clean_data(data: pd.DataFrame, id_) -> pd.DataFrame:
     data.rename(columns={"learning_objective_id": "LOID",
                          "user_id": "UserId",
                          "submit_date": "SubmitDate",
+                         "exercise_id": "ExerciseId"
                          }, inplace=True)
     print(data.columns)
     data.SubmitDate = pd.to_datetime(data.SubmitDate)
@@ -57,6 +65,9 @@ def load_studydata(ql, file_name, id_):
             data = pickle.load(open(PICKLE_QUICK_LOAD, "rb"))
             return data
     data = clean_data(pd.read_csv(file_name, index_col=1), id_)
+    data['DateTime'] = data.SubmitDate
+    data = PhaseFinder().find_gynzy_phases(data, "jm") # using jm when id_
+    # is clickdata_jm
     pickle.dump(data, open(PICKLE_QUICK_LOAD, "wb"))
     return data
 
@@ -72,11 +83,11 @@ if __name__ == "__main__":
         # "click data"
         # "saving"
     ]
-    do_quick_loading = False
+    do_quick_loading = True
     do_estimate_parameters = False
     do_plotting = False
     run_studydata_pipeline(do_quick_loading, do_estimate_parameters,
                            id_="clickdata_jm",
-                           file_name="./res/clickdata_jm.csv",
+                           file_name="./res/studydata_jm.csv",
                            skipping=do_skipping,
                            plotting=do_plotting)

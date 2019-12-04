@@ -280,7 +280,8 @@ def load(ql, f_name="./res/leerpaden_app.xlsx", id_="simone"):
         if id_ in ["karlijn_en_babette", "kb", "kb_all", "test", "jm",
                    ]:
             data = PhaseFinder().find_gynzy_phases(data, id_)
-        elif id_ in ["kb_all_attempts_curve", "kb_smoothed_curves"]:
+        elif id_ in ["kb_all_attempts_curve", "kb_smoothed_curves",
+                     ]:
             data = PhaseFinder().find_gynzy_phases_with_lesson_info(data, id_)
         else:
             data = PhaseFinder().find_phases(data)
@@ -390,7 +391,7 @@ if __name__ == "__main__":
         # "effort",
         # "saving"
     ]
-    do_quick_loading = True
+    do_quick_loading = False
     do_estimate_parameters = False
     do_plotting = False
     run_pipeline(do_quick_loading, do_estimate_parameters,
