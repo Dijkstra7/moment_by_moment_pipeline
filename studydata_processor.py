@@ -8,6 +8,7 @@ class StudyDataProcessor:
         self.data = df
         self.short_file = short_file
         self.long_file = long_file
+        self.scaffold_dict = None
 
     def get_click_changes_week(self, skill, id_):
         """
@@ -60,7 +61,7 @@ class StudyDataProcessor:
             user_data['difficulty_changed'] = user_data.difficulty_level.ne(
                 user_data.difficulty_level.shift().bfill()).astype(int)
             value = sum(user_data.difficulty_changed.loc[
-                user_data.SubmitDate.dt.day.isin(three_four_days)])
+                            user_data.SubmitDate.dt.day.isin(three_four_days)])
 
             self.short_file.loc[(self.short_file.UserId == user) &
                                 (self.short_file.LOID == skill), scid] = value
@@ -85,7 +86,7 @@ class StudyDataProcessor:
             user_data['difficulty_changed'] = user_data.difficulty_level.ne(
                 user_data.difficulty_level.shift().bfill()).astype(int)
             value = sum(user_data.difficulty_changed.loc[
-                user_data.SubmitDate.dt.day.isin(three_days)])
+                            user_data.SubmitDate.dt.day.isin(three_days)])
 
             self.short_file.loc[(self.short_file.UserId == user) &
                                 (self.short_file.LOID == skill), scid] = value
@@ -110,7 +111,7 @@ class StudyDataProcessor:
             user_data['difficulty_changed'] = user_data.difficulty_level.ne(
                 user_data.difficulty_level.shift().bfill()).astype(int)
             value = sum(user_data.difficulty_changed.loc[
-                user_data.SubmitDate.dt.day.isin(fourth_days)])
+                            user_data.SubmitDate.dt.day.isin(fourth_days)])
 
             self.short_file.loc[(self.short_file.UserId == user) &
                                 (self.short_file.LOID == skill), scid] = value
@@ -137,7 +138,7 @@ class StudyDataProcessor:
             use_days = None
             if id_ == "clickdata_jm":
                 if day is not None:
-                    use_days = [10+day, 17+day]
+                    use_days = [10 + day, 17 + day]
                 else:
                     use_days = [11, 12, 13, 14, 15, 18, 19, 20, 21, 22]
             if use_days is None:
@@ -148,9 +149,9 @@ class StudyDataProcessor:
             user_data['difficulty_changed'] = user_data.difficulty_level.ne(
                 user_data.difficulty_level.shift().bfill()).astype(int)
             selection = user_data.difficulty_changed.loc[
-                            (user_data.SubmitDate.dt.day.isin(use_days)) &
-                            (user_data.difficulty_level ==
-                             self.get_difficulty_level_value(difficulty))]
+                (user_data.SubmitDate.dt.day.isin(use_days)) &
+                (user_data.difficulty_level ==
+                 self.get_difficulty_level_value(difficulty))]
             if info_type == "selection":
                 value = sum(selection)
             else:
@@ -166,3 +167,39 @@ class StudyDataProcessor:
         if str.lower(difficulty) == "hard":
             return 0.85
         return 0.75
+
+    def create_scaffold_data(self, skill, id_):
+        if id_ not in ["clickdata_jm"]:
+            raise NotImplementedError
+        self.scaffold_dict = {}
+        data = self.data.copy()
+        for user in data.UserId.unique():
+            select_data = data.loc[
+                (data.UserId == user) &
+                (data.LOID == skill)]
+            select_data['difficulty_changed'] = select_data.difficulty_level. \
+                ne(select_data.difficulty_level.shift().bfill()).astype(int)
+            select_data['scaffold_indication'] = select_data.AAA.diff().\
+                bfill().map(self.to_scaffold_value).shift()
+            print(select_data['scaffold_indication'].values)
+
+            self.scaffold_dict[(user, skill)] = select_data[[
+                "difficulty_changed",
+                "scaffold_indication",
+                "difficulty_level"
+            ]]
+
+    @staticmethod
+    def to_scaffold_value(difference):
+        if difference < -5:
+            return 0.65
+        if difference > .5:
+            return 0.85
+        return 0.75
+
+    def get_adjusted_like_scaffold(self, skill, difference_type, id_):
+        # TODO: Correct start and end of function
+        data = self.data.copy
+        for user in data.UserId.unique():
+            select_data = self.scaffold_dict[(user, skill)]
+            # TODO: Select correct value
