@@ -34,12 +34,17 @@ def run_studydata_pipeline(ql=True, estimate_parameters=False, id_="simone",
             processor.get_click_changes_third_day(skill, id_)
         for skill in skills:
             processor.get_click_changes_fourth_day(skill, id_)
-        for skill in skills:
-            for difficulty in ["easy", "medium", "hard"]:
-                for day in [None, 1, 2, 3, 4]:
-                    for info_type in ["selection", "sums made"]:
-                        processor.get_difficulty_details(skill, id_, day,
-                                                         difficulty, info_type)
+        for data_type in ["problems", "attempts"]:
+            for skill in skills:
+                for difficulty in ["easy", "medium", "hard"]:
+                    for day in [None, 1, 2, 3, 4]:
+                        for info_type in ["selection", "sums made"]:
+                            if info_type == "selection" and data_type == \
+                                    "problems":
+                                continue
+                            processor.get_difficulty_details(
+                                skill, id_, day, difficulty, info_type,
+                                data_type)
 
     # Do Adjusting according to scaffold stuff
     if "adjusting to scaffold" not in skipping:
@@ -53,13 +58,16 @@ def run_studydata_pipeline(ql=True, estimate_parameters=False, id_="simone",
                     skill, difference_type, id_)
                 processor.get_adjusted_easier_than_scaffold(
                     skill, difference_type, id_)
-            for skill in skills:
-                processor.get_sums_made_adjusted_like_scaffold(
-                    skill, difference_type, id_)
-                processor.get_sums_made_adjusted_harder_than_scaffold(
-                    skill, difference_type, id_)
-                processor.get_sums_made_adjusted_easier_than_scaffold(
-                    skill, difference_type, id_)
+            # #Summing is not correct at the moment, needs to keep
+            # # difficulty recommended at start of change not at moment of
+            # # exercise making.
+            # for skill in skills:
+            #     processor.get_sums_made_adjusted_like_scaffold(
+            #         skill, difference_type, id_)
+            #     processor.get_sums_made_adjusted_harder_than_scaffold(
+            #         skill, difference_type, id_)
+            #     processor.get_sums_made_adjusted_easier_than_scaffold(
+            #         skill, difference_type, id_)
 
     # Do saving stuff
     if "saving" not in skipping:
@@ -103,8 +111,8 @@ def save_studydata_output(saver, processor, f_name="studydata_jm"):
 
 if __name__ == "__main__":
     do_skipping = [
-        "click data",
-        # "adjusting to scaffold",
+        # "click data",
+        "adjusting to scaffold",
         # "saving"
     ]
     do_quick_loading = True
