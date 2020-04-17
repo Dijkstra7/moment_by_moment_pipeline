@@ -382,20 +382,20 @@ def inspect(data):
 
 if __name__ == "__main__":
     do_skipping = [
-        # "pre/post",
-        # "total exercises",
-        # "per skill",
+        "pre/post",
+        "total exercises",
+        "per skill",
         # "curves",
-        # "curve_statistics",
-        # "per lesson",
-        # "effort",
+        "curve_statistics",
+        "per lesson",
+        "effort",
         # "saving"
     ]
-    do_quick_loading = False
+    do_quick_loading = True
     do_estimate_parameters = False
     do_plotting = False
     run_pipeline(do_quick_loading, do_estimate_parameters,
-                 id_="jm",
-                 file_name="./res/data_jm.xlsx",
+                 id_="kb_all",
+                 file_name="./res/data_kb_all_tests_info.xlsx",
                  skipping=do_skipping,
                  plotting=do_plotting)

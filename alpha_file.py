@@ -1,16 +1,18 @@
-from config import pre_ids, post_ids
+from config import gynzy_pre_ids, gynzy_post_ids
 import pandas as pd
 import numpy as np
 from loader import DataLoader
+from phase_finder import PhaseFinder
 
 if __name__ == "__main__":
     # Load most recently used data
-    loader = DataLoader()
-    data, transfer_data = loader.load(quick_loading=True)
-
+    loader = DataLoader(f_name="res/data_jm.xlsx")
+    data, transfer_data = loader.load(quick_loading=False)
+    if 'phase' not in data.columns:
+        data = PhaseFinder().find_gynzy_phases(data, "jm")
     # Construct alpha info data frames.
-    pre_alpha = pd.DataFrame(columns=pre_ids)
-    post_alpha = pd.DataFrame(columns=post_ids)
+    pre_alpha = pd.DataFrame(columns=gynzy_pre_ids)
+    post_alpha = pd.DataFrame(columns=gynzy_post_ids)
     transfer_alpha = pd.DataFrame(columns=transfer_data.ExerciseId.unique())
 
     # Construct dictionary for column names
@@ -88,4 +90,4 @@ if __name__ == "__main__":
 
     # Combine and save all alpha data frames.
     alpha = pd.concat((pre_alpha, post_alpha, transfer_alpha), axis=1)
-    alpha.to_csv("output/alpha_check.csv", na_rep=999)
+    alpha.to_csv("output/alpha_check_jm.csv", na_rep=999)

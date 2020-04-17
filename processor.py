@@ -621,7 +621,7 @@ class Processor:
                     use_legend=(not add_ln),
                     title=curve_type
                 )
-            if folder in ["kb_smoothed_curves"]:
+            if folder in ["kb_smoothed_curves", "jm", "kb_all"]:
                 ordered, curve_type = order_curve(
                     select.AbilityAfterAnswer.values * .01 - .5)
                 self.short.loc[(self.short.UserId == user) &
