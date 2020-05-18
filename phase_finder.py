@@ -240,7 +240,7 @@ class PhaseFinder:
 
     def get_experiment_day(self, row_datetime, first_day, id_="kb"):
         # Set up dictionary to match experiment dates to days
-        if id_ == "kb":
+        if id_ in ["kb", "kb_all"]:
             experiment_day = {"day0": [(3, 29), (4, 5), (5, 10), (5, 29)],
                               "day1": [(4, 1), (4, 8), (5, 13), (6, 3)],
                               "day2": [(4, 2), (4, 9), (5, 14), (6, 4)],

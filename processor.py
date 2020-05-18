@@ -1794,6 +1794,89 @@ class Processor:
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value
 
+    def get_ability_at_end_of_repeat_lesson(self, skill, id_=""):
+        desc = f"Get ability score after second lesson for skill" \
+               f"{skill} "
+        scid = f"laatste_vaardigheidsscore_van_herhalingsles"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
+            else:
+                raise NotImplementedError
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              repeat_days &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            # Get the ability score at the end
+            if len(select) > 0:
+                value = select['AbilityAfterAnswer'].values[-1]
+            else:
+                value = 999
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_last_ability_before_post_test(self, skill, id_=""):
+        desc = f"Get ability score after second lesson for skill" \
+               f"{skill} "
+        scid = f"vaardigheidsscore_na_herhalingsles"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.data.copy()
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            if id_ == "Simone":
+                repeat_days = data.DateTime.dt.day.isin([17, 21, 31])
+            elif id_ == "Nadine":
+                repeat_days = (
+                        ((data.DateTime.dt.day.isin([15, 29])) &  # And
+                         (data.DateTime.dt.month == 11))
+                        |  # Or
+                        ((data.DateTime.dt.day == 13) &  # And
+                         (data.DateTime.dt.month == 12))
+                )
+            elif "day4" in data.phase.values:
+                repeat_days = data.phase == "day4"
+            else:
+                raise NotImplementedError
+            # Select the data that is in the repeat lesson and not in tests
+            select = data.loc[(data.UserId == user) &
+                              (data.LOID == skill) &
+                              repeat_days &
+                              (~data.phase.isin(["pre", "post"]))
+                              ]
+
+            # Get the ability score at the end
+            if len(select) > 0:
+                value = select['AbilityAfterAnswer'].values[-1]
+            else:
+                value = self.short.loc[(self.short.UserId == user) &
+                                  (self.short.LOID == skill),
+                                  f"vaardigheid_na_eerste_les"
+                ] # Breaks if this is not made in time I think
+                # value = 999
+
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
 
 class ParameterExtractor:
     """

@@ -5,6 +5,7 @@ Saver
 
 Creates and saves the long and short files
 """
+import datetime
 import os
 import pandas as pd
 from config import unknown_columns
@@ -75,9 +76,14 @@ class Saver:
 
     def save(self, f_name):
         print(f"Saving to directory {self.data_dir}")
-        self.short.to_csv(f"{self.data_dir}\{f_name}_short.csv", na_rep=999)
-        self.long.to_csv(f"{self.data_dir}\{f_name}_long.csv", na_rep=999)
-        self.short.to_excel(f"{self.data_dir}\{f_name}_short.xlsx", na_rep=999)
-        self.long.to_excel(f"{self.data_dir}\{f_name}_long.xlsx", na_rep=999)
+        datenow = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        self.short.to_csv(f"{self.data_dir}\\{f_name}_short_{datenow}.csv",
+                          na_rep=999)
+        self.long.to_csv(f"{self.data_dir}\\{f_name}_long_{datenow}.csv",
+                         na_rep=999)
+        self.short.to_excel(f"{self.data_dir}\\{f_name}_short_{datenow}.xlsx",
+                            na_rep=999)
+        self.long.to_excel(f"{self.data_dir}\\{f_name}_long_{datenow}.xlsx",
+                           na_rep=999)
 
 

@@ -238,6 +238,13 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
     #     processor.get_shown_path_after_first_lesson(skill)
     #     processor.get_shown_path_after_repeat_lesson(skill)
 
+    # Quick hack to get the scores after the lessons
+    if "quickhack" not in skipping:
+        for skill in skills:
+            processor.get_last_ability_first_lesson_of_skill(skill)
+            processor.get_ability_at_end_of_repeat_lesson(skill)
+            processor.get_last_ability_before_post_test(skill)
+
     if "saving" not in skipping:
         save(saver, processor, f_name=id_)
 
@@ -382,13 +389,14 @@ def inspect(data):
 
 if __name__ == "__main__":
     do_skipping = [
-        # "pre/post",
-        # "total exercises",
-        # "per skill",
-        # "curves",
-        # "curve_statistics",
+        "pre/post",
+        "total exercises",
+        "per skill",
+        "curves",
+        "curve_statistics",
         # "per lesson",
-        # "effort",
+        "effort",
+        # "quickhack",
         # "saving"
     ]
     do_quick_loading = False
