@@ -23,7 +23,8 @@ nadine_file_name = "./../Applab/Moment2Moment/resultaten-radboud-all_anoniem "\
 if GYNZY is False:
     loids = {8025: "S1", 7789: "S2", 7771: "S3"}
 else:
-    loids = {8232: "S1", 8234: "S2", 8240: "S3"}
+    loids = {12520: "S1", 8220: "S2", 12402: "S3", 10488: "S4", 10071: "S5", 8209: "S6", 8216: "S7", 8214: "S8"}  # adjust with ff
+
 
 filters = {"LOID": ["7579", 7579, np.nan, 8181], "UserId": [2217523, 1376603]}
 transfer_filters = {"LOID": {8025, 7789, 7771, np.nan}}
@@ -70,6 +71,7 @@ PARAMETER_S = [0.1, 0.1, 0.1]
 LEARNING_GOALS = [7771, 7789, 8025]
 if GYNZY is True:
     LEARNING_GOALS = [8232, 8234, 8240]  # Test for Babette
+    LEARNING_GOALS = [12520, 8220, 12402, 10488, 10071, 8209, 8216]  # New for FF
 IMMEDIATE_PEAK_BOUNDARY = 10
 MINIMUM_CHANGE = 0.015
 MAXIMIMUM_DISTANCE_CLOSE_PEAKS = 25

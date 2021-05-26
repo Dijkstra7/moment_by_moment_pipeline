@@ -19,21 +19,21 @@ class Saver:
         self.skills = df['LOID'].drop_duplicates().values
         self.short = self.set_up_short(df)
         self.long = self.set_up_long(df)
-        if len(self.short)/3 != len(self.long):
-            print(len(self.short), len(self.long), self.long.columns)
-            print(self.short['LOID'].drop_duplicates())
-            print(self.short.head())
-            print(self.short.tail())
-            print(len(self.short.loc[self.short['LOID'] == 8232]))
-            print(len(self.short.loc[self.short['LOID'] == 8234]))
-            print(len(self.short.loc[self.short['LOID'] == 8240]))
-            for goal in self.short['LOID'].unique():
-                for user in self.long.UserId.values:
-                    if user not in \
-                            self.short.loc[self.short['LOID'] == goal].values:
-                        print(f"missing user {user} in goal {goal}")
-            print(self.skills)
-            raise ValueError
+        # if len(self.short)/len(self.skills) != len(self.long):  # No check with ff id_
+        #     print(len(self.short), len(self.long), self.long.columns)
+        #     print(self.short['LOID'].drop_duplicates())
+        #     print(self.short.head())
+        #     print(self.short.tail())
+        #     print(len(self.short.loc[self.short['LOID'] == 8232]))
+        #     print(len(self.short.loc[self.short['LOID'] == 8234]))
+        #     print(len(self.short.loc[self.short['LOID'] == 8240]))
+        #     for goal in self.short['LOID'].unique():
+        #         for user in self.long.UserId.values:
+        #             if user not in \
+        #                     self.short.loc[self.short['LOID'] == goal].values:
+        #                 print(f"missing user {user} in goal {goal}")
+        #     print(self.skills)
+        #     raise ValueError
 
     def set_up_short(self, df):
         """

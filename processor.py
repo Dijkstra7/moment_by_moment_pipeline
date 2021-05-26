@@ -123,10 +123,8 @@ class Processor:
         for user in data['UserId'].unique():
             if len(data.loc[(data.phase == phase) &
                             (data.UserId == user)]) > 0:
-                select = data.loc[(data.phase == phase) &
-                                  (data.UserId == user) &
-                                  (data.Correct >= 1)]
-                value = len(select)
+                value = sum(data["Correct"].loc[(data.phase == phase) &
+                                                 (data.UserId == user)].values[:24])
             else:
                 value = 0
             self.short.loc[self.short.UserId == user, cid] = value
@@ -940,6 +938,7 @@ class Processor:
         skill
 
         """
+        moment += 1
         moment_dict = {1: "first", 2: "repeat", 3: "end"}
         desc = f"get the goal set for the {moment_dict[moment]}" \
                f" lessons of skill {skill} "
@@ -947,11 +946,22 @@ class Processor:
         lcid = f"{scid}_{skill}"
         self.short.loc[self.short.LOID == skill, scid] = np.nan
         self.long[lcid] = np.nan
-        data = pd.read_csv("./res/objectiveinstances.csv", index_col=0)
+        data = pd.read_csv("./res/EndstateH.csv",
+                           index_col=0,
+                           names=["StudentId", "UserId", "Login", "Pass",
+                                  "IsExperiment", "App", "Class", "ObjId",
+                                  "learning_objective_id", "user_id", "phase",
+                                  "goal", "goal_set", "exercises_made", "aaa",
+                                  "nais_and_zero", "difficulty_requested",
+                                  "is_active_loid", "loid_desc"],
+                           header=0
+                           )
+        key_file = pd.read_csv("./res/key_file.csv")
         for user in tqdm(self.att['UserId'].unique(), desc=desc):
+            user_key = key_file.loc[key_file.anon_id==user, "gynzy_id"].values[0]
             set_logs = data.loc[
-                (data.user_id == user) &
-                (data.learning_objective_id == self.real_skill[skill]) &
+                (data.user_id == user_key) &
+                (data.learning_objective_id == skill) &
                 (data.phase == moment_dict[moment])].goal.values
             if len(set_logs) > 0 and set_logs[0] >= 0:
                 value = set_logs[-1]
@@ -1790,6 +1800,134 @@ class Processor:
                 value = 999
             else:
                 value = select.Effort.sum()
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def calculate_difference_first_goal_reality(self, skill):
+        """Calculate difference between set first goal of first lesson and real ability after first lesson"""
+        desc = "Calculate difference first set goal and end first lesson"
+        scid = f"difference_first_goal_first_lesson"
+        lcid = f"{scid}_{skill}"
+        goal_key = f"set_goal_first"
+        reality_key = f"vaardigheid_na_eerste_les"
+        self.short.loc[self.short.LOID == skill, scid] = 999
+        self.long[lcid] = 999
+        short_mask = ((self.short.LOID == skill) &
+                       (self.short[f"{reality_key}"] != 999) &
+                       (self.short[goal_key] != 999))
+        long_mask = (self.long[f"{reality_key}_{skill}"] != 999) & (self.long[f"{goal_key}_{skill}"] != 999)
+        self.short.loc[short_mask, scid] = \
+            self.short.loc[short_mask, reality_key] - self.short.loc[short_mask, goal_key]
+        self.long.loc[long_mask, lcid] = self.long.loc[long_mask, f"{reality_key}_{skill}"] - \
+                                     self.long.loc[long_mask, f"{goal_key}_{skill}"]
+
+    def calculate_difference_repeat_goal_reality(self, skill):
+        """Calculate difference between set first goal of first lesson and real ability after first lesson"""
+        desc = "Calculate difference first set goal and end first lesson"
+        scid = f"difference_repeat_goal_repeat_lesson"
+        lcid = f"{scid}_{skill}"
+        goal_key = f"set_goal_repeat"
+        reality_key = f"Vaardigheidsscore"
+        long_key = {8209: "S6", 8216: "S7", 10071: "S5", 12402: "S3",
+                    10488: "S4", 8220: "S2", 12520: "S1", 8214: "S8"}[skill]
+        self.short.loc[self.short.LOID == skill, scid] = 999
+        self.long[lcid] = 999
+        short_mask = ((self.short.LOID == skill) &
+                       (self.short[f"{reality_key}_skill"] != 999) &
+                       (self.short[goal_key] != 999))
+        long_mask = (self.long[f"{reality_key}_{long_key}"] != 999) & (self.long[f"{goal_key}_{skill}"] != 999)
+        self.short.loc[short_mask, scid] = \
+            self.short.loc[short_mask, f"{reality_key}_skill"] - \
+            self.short.loc[short_mask, goal_key]
+        self.long.loc[long_mask, lcid] = self.long.loc[long_mask, f"{reality_key}_{long_key}"] - \
+                                     self.long.loc[long_mask, f"{goal_key}_{skill}"]
+
+    def calculate_difference_end_goal_reality(self, skill):
+        """Calculate difference between set first goal of first lesson and real ability after first lesson"""
+        desc = "Calculate difference first set goal and end first lesson"
+        scid = f"difference_end_goal_end_lesson"
+        lcid = f"{scid}_{skill}"
+        goal_key = f"set_goal_end"
+        reality_key = f"Vaardigheidsscore"
+        long_key = {8209: "S6", 8216: "S7", 10071: "S5", 12402: "S3",
+                    10488: "S4", 8220: "S2", 12520: "S1", 8214: "S8"}[skill]
+        self.short.loc[self.short.LOID == skill, scid] = 999
+        self.long[lcid] = 999
+        short_mask = ((self.short.LOID == skill) &
+                       (self.short[f"{reality_key}_skill"] != 999) &
+                       (self.short[goal_key] != 999))
+        long_mask = (self.long[f"{reality_key}_{long_key}"] != 999) & (self.long[f"{goal_key}_{skill}"] != 999)
+        self.short.loc[short_mask, scid] = \
+            self.short.loc[short_mask, f"{reality_key}_skill"] - \
+            self.short.loc[short_mask, goal_key]
+        self.long.loc[long_mask, lcid] = self.long.loc[long_mask, f"{reality_key}_{long_key}"] - \
+                                     self.long.loc[long_mask, f"{goal_key}_{skill}"]
+
+    def get_changed_difficulties(self, skill):
+        """ Get the amount of times the difficulty is changed by a student"""
+        desc = f" Get the amount of times the difficulty is changed by a student for skill {skill}"
+        scid = "times_changed_difficulty"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.logs.copy()
+        key_file = pd.read_csv("./res/key_file.csv")
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            user_key = key_file.loc[key_file.anon_id == user, "gynzy_id"].values[0]
+            select = data.loc[(data.UserId == user_key) &
+                              (data.Action == 6) &
+                              (data.Info == skill)]
+            value = len(select)
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+
+    def get_changed_difficulties_up(self, skill):
+        """ Get the amount of times the difficulty is changed by a student"""
+        desc = f" Get the amount of times the difficulty is changed by a student for skill {skill}"
+        scid = "times_changed_difficulty_up"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.logs.copy()
+        key_file = pd.read_csv("./res/key_file.csv")
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            user_key = key_file.loc[key_file.anon_id == user, "gynzy_id"].values[0]
+            select = data.loc[(data.UserId == user_key) &
+                              (data.Action == 6) &
+                              (data.Info == skill)]
+            select = select.ObjectId.values
+            value = 0
+            for i, v in enumerate(select):
+                if i > 0:
+                    if v > select[i-1]:
+                        value += 1
+            self.short.loc[(self.short.UserId == user) &
+                           (self.short.LOID == skill), scid] = value
+            self.long.loc[self.long.UserId == user, lcid] = value
+
+    def get_changed_difficulties_down(self, skill):
+        """ Get the amount of times the difficulty is changed down by a student"""
+        desc = f" Get the amount of times the difficulty is changed down by a student for skill {skill}"
+        scid = "times_changed_difficulty_down"
+        lcid = f"{scid}_{skill}"
+        self.short.loc[self.short.LOID == skill, scid] = np.nan
+        self.long[lcid] = np.nan
+        data = self.logs.copy()
+        key_file = pd.read_csv("./res/key_file.csv")
+        for user in tqdm(self.data['UserId'].unique(), desc=desc):
+            user_key = key_file.loc[key_file.anon_id == user, "gynzy_id"].values[0]
+            select = data.loc[(data.UserId == user_key) &
+                              (data.Action == 6) &
+                              (data.Info == skill)]
+            select = select.ObjectId.values
+            value = 0
+            for i, v in enumerate(select):
+                if i > 0:
+                    if v < select[i-1]:
+                        value += 1
             self.short.loc[(self.short.UserId == user) &
                            (self.short.LOID == skill), scid] = value
             self.long.loc[self.long.UserId == user, lcid] = value

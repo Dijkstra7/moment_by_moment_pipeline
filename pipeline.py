@@ -13,6 +13,7 @@ from processor import Processor
 from saver import Saver
 from config import filters  # , transfer_filters, GYNZY
 from phase_finder import PhaseFinder  # , pre_ids as pi
+from convert_gynzy_csv import convert
 
 
 def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
@@ -54,9 +55,13 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
         skipping = []
 
     # Load and preprocess data.
-    data, first_att_data, transfer_data, log_data = load(
-        ql, file_name, id_)
+    if id_ not in ["ff"]:
+        data, first_att_data, transfer_data, log_data = load(
+            ql, file_name, id_)
+    else:
+        data, first_att_data, transfer_data, log_data = convert(file_name)
     skills = data.LOID.unique()
+    skills = [8209, 8216, 10071, 12402, 10488, 8220, 12520, 8214] # ff hack: no transfer skills
     # print(data[['UserId', 'ExerciseId', 'LOID', 'phase']].loc[
     #           data.UserId == 2369506].tail(60))
     # Inspect the data to determine whether preprocessing was performed correct
@@ -115,19 +120,19 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
             processor.count_total_exercises_correct_att_per_skill(skill)
         for skill in skills:
             processor.calculate_percentage_correct_att_per_skill(skill)
-        for skill in skills:
-            processor.count_total_adaptive_per_skill(skill)
-        for skill in skills:
-            processor.count_correct_adaptive_per_skill(skill)
-        for skill in skills:
-            processor.calculate_percentage_correct_adaptive_per_skill(skill)
-        for skill in skills:
-            processor.count_total_adaptive_att_per_skill(skill)
-        for skill in skills:
-            processor.count_correct_adaptive_att_per_skill(skill)
-        for skill in skills:
-            processor.calculate_percentage_correct_adaptive_att_per_skill(
-                skill)
+        # for skill in skills:
+        #     processor.count_total_adaptive_per_skill(skill)
+        # for skill in skills:
+        #     processor.count_correct_adaptive_per_skill(skill)
+        # for skill in skills:
+        #     processor.calculate_percentage_correct_adaptive_per_skill(skill)
+        # for skill in skills:
+        #     processor.count_total_adaptive_att_per_skill(skill)
+        # for skill in skills:
+        #     processor.count_correct_adaptive_att_per_skill(skill)
+        # for skill in skills:
+        #     processor.calculate_percentage_correct_adaptive_att_per_skill(
+        #         skill)
 
     # Curve stuff
     if "curves" not in skipping:
@@ -226,7 +231,7 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
 
     # Effort stuff
     if "effort" not in skipping:
-        if id_ in ["kb", "kb_all"]:
+        if id_ in ["kb", "kb_all", "ff"]:
             for skill in skills:
                 processor.calculate_average_effort(skill, id_)
             for skill in skills:
@@ -238,6 +243,24 @@ def run_pipeline(ql=True, estimate_parameters=False, id_="simone",
     #     processor.get_shown_path_after_first_lesson(skill)
     #     processor.get_shown_path_after_repeat_lesson(skill)
 
+    if "logs" not in skipping:
+        for skill in skills:
+            for moment in range(3):
+                processor.get_setgoal(skill, moment)
+        for skill in skills:
+            processor.get_changed_difficulties(skill)
+        for skill in skills:
+            processor.get_changed_difficulties_down(skill)
+        for skill in skills:
+            processor.get_changed_difficulties_up(skill)
+
+    if "per lesson" not in skipping and "logs" not in skipping:
+        for skill in skills:
+            processor.calculate_difference_first_goal_reality(skill)
+        for skill in skills:
+            processor.calculate_difference_repeat_goal_reality(skill)
+        for skill in skills:
+            processor.calculate_difference_end_goal_reality(skill)
     if "saving" not in skipping:
         save(saver, processor, f_name=id_)
 
@@ -385,17 +408,18 @@ if __name__ == "__main__":
         # "pre/post",
         # "total exercises",
         # "per skill",
-        # "curves",
-        # "curve_statistics",
+        "curves",
+        "curve_statistics",
         # "per lesson",
         # "effort",
         # "saving"
+        # "logs"
     ]
     do_quick_loading = False
     do_estimate_parameters = False
     do_plotting = False
     run_pipeline(do_quick_loading, do_estimate_parameters,
-                 id_="jm",
-                 file_name="./res/data_jm.xlsx",
+                 id_="ff",
+                 file_name="./res/ru-data-vanaf-1maart-2021.csv",
                  skipping=do_skipping,
                  plotting=do_plotting)

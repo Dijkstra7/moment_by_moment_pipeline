@@ -7,7 +7,7 @@ def create_key_file(input="res/EndstateH.csv"):
     secret = pd.read_csv(input)
     secret.sort_values(by=["1"], inplace=True)
     students = secret["1"].unique()
-    counters={}
+    counters = {}
     key_file = pd.DataFrame(students, columns=["gynzy_id"])
     key_file["anon_id"] = ""
     key_file["groep"] = ""
@@ -28,7 +28,7 @@ def create_key_file(input="res/EndstateH.csv"):
     return key_file
 
 
-def convert(f_input="res/ru-data-vanaf-1maart-2021.csv", student_data="res/EndstateH.csv"):
+def convert(f_input="res/ru-data-vanaf-1maart-2021.csv"):
     # Read in Gynzy structured dataset
     data_set = pd.read_csv(f_input)
     print(data_set.columns)
@@ -39,7 +39,7 @@ def convert(f_input="res/ru-data-vanaf-1maart-2021.csv", student_data="res/Endst
     except Exception as e:
         raise FileNotFoundError("You are missing the key file")
     student_ids = key_file["gynzy_id"].unique()
-    loid_ids = [8209, 8216, 10071, 12402, 10488, 8220, 12520]  # Hardcoded values
+    loid_ids = [8209, 8216, 10071, 12402, 10488, 8220, 12520, 8234, 8214]  # Hardcoded values
     print(len(student_ids))
 
     # Order dataset
@@ -49,25 +49,39 @@ def convert(f_input="res/ru-data-vanaf-1maart-2021.csv", student_data="res/Endst
     print("Converting to Datetime")
     data_set["createdAt"] = pd.to_datetime(data_set["createdAt"])
     data_set = data_set.loc[(data_set["createdAt"].dt.date >= pd.to_datetime("2021-03-29")) &
-                            (data_set["createdAt"].dt.date < pd.to_datetime("2021-04-22")) &
+                            (data_set["createdAt"].dt.date < pd.to_datetime("2021-04-24")) &
                             (data_set["student"].isin(student_ids)) &
                             (data_set["microgoal"].isin(loid_ids))
-    ]
+                            ]
 
     # Create converted dataset to be processed by pipeline
     converted_set = pd.DataFrame()
     converted_set["LOID"] = data_set["microgoal"]
-    converted_set["AbilityAfterAnswer"] = data_set["studentAbility"]
-    converted_set["Correct"] = data_set["isCorrect"] == "TRUE"
+    converted_set["AbilityAfterAnswer"] = data_set["studentAbility"] + 2 * 25
+    converted_set["Correct"] = data_set["isCorrect"].astype(int)
     converted_set["UserId"] = ""
     for student in student_ids:
-        converted_set["UserId"] = key_file[key_file["gynzy_id"] == student].iloc[0].anon_id
+        converted_set["UserId"].loc[data_set["student"] == student] = key_file[key_file["gynzy_id"] == student].iloc[
+            0].anon_id
     converted_set["DateTime"] = data_set["createdAt"]
+    converted_set["ExerciseId"] = data_set["exercise"]
     converted_set["phase"] = ""
-    converted_set["phase"].loc[data_set["lesson"].isin([56186])] = "pre"  # TODO Find out other lessons matching pre-test
-    converted_set["phase"].loc[data_set["lesson"].isin([56186])] = "post"
-    return converted_set
-
+    converted_set["phase"].loc[converted_set["DateTime"].dt.day.isin([29, 6, 19])] = "day1"
+    converted_set["phase"].loc[converted_set["DateTime"].dt.day.isin([30, 7, 20])] = "day2"
+    converted_set["phase"].loc[converted_set["DateTime"].dt.day.isin([1, 8, 14, 21])] = "day3"
+    converted_set["phase"].loc[converted_set["DateTime"].dt.day.isin([2, 9, 15, 22])] = "day4"
+    converted_set["phase"].loc[data_set["lesson"].isin([56186, 56192, 56189])] = "pre"
+    converted_set["phase"].loc[data_set["lesson"].isin([56193, 56190, 56187])] = "post"
+    converted_set["phase"].loc[data_set["lesson"].isin([56194, 56191, 56188])] = "transfer"
+    converted_set["Effort"] = data_set["exerciseDifficulty"]
+    converted_set["Lesson"] = data_set["lesson"]
+    first_attempts = converted_set.copy()
+    first_attempts = converted_set.drop_duplicates(subset=['UserId', 'ExerciseId', 'LOID'])
+    return converted_set.loc[converted_set.phase != "transfer"], \
+        first_attempts, \
+        converted_set.loc[converted_set.phase == "transfer"], \
+        pd.read_csv("res/LogdataH.csv", index_col=0, header=0, names=["index", "DateTime", "UserId", "Screen",
+                                                                      "Action", "ObjectId", "Info"], parse_dates=[1])
 
 
 if __name__ == "__main__":

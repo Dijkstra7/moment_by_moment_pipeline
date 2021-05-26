@@ -35,10 +35,10 @@ def get_peaks(curve):
 def get_curve(df, testing=False):
     loid = df.LOID.values[0]
     # print(loid)
-    p_l = config.PARAMETER_L[config.LEARNING_GOALS.index(loid)]
-    p_t = config.PARAMETER_T[config.LEARNING_GOALS.index(loid)]
-    p_g = config.PARAMETER_G[config.LEARNING_GOALS.index(loid)]
-    p_s = config.PARAMETER_S[config.LEARNING_GOALS.index(loid)]
+    p_l = config.PARAMETER_L[config.LEARNING_GOALS.index(loid) % len(config.PARAMETER_L)]
+    p_t = config.PARAMETER_T[config.LEARNING_GOALS.index(loid) % len(config.PARAMETER_T)]
+    p_g = config.PARAMETER_G[config.LEARNING_GOALS.index(loid) % len(config.PARAMETER_G)]
+    p_s = config.PARAMETER_S[config.LEARNING_GOALS.index(loid) % len(config.PARAMETER_S)]
     ln = get_ln(df, p_l, p_t, p_g, p_s, testing)
     n_ln_t = [(1 - n) * p_t for n in ln]
     n_ln_n_t = [(1 - n) * (1 - p_t) for n in ln]
